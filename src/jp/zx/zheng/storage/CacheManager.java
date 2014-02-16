@@ -1,0 +1,71 @@
+package jp.zx.zheng.storage;
+
+import java.io.File;
+import java.io.FileDescriptor;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.channels.FileChannel;
+
+import android.os.Environment;
+
+public class CacheManager {
+
+	private static final String CACHE_DIR = "/CloudMusic/";
+	
+	public static boolean isCached (String path) {
+		System.out.println(Environment.getExternalStorageDirectory());
+		String fullPath = Environment.getExternalStorageDirectory() + CACHE_DIR + convertPath(path);
+		return new File(fullPath).exists();
+	}
+	
+	public static FileInputStream getCacheFile (String path) {
+		String fullPath = Environment.getExternalStorageDirectory() + CACHE_DIR + convertPath(path);
+		File file = new File(fullPath);
+		try {
+			return new FileInputStream(file);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	private static void mkCacheParentDir(String filePath){
+		String parentDirString = new File(Environment.getExternalStorageDirectory() 
+				+ CACHE_DIR + convertPath(filePath)).getParent();
+		File parentDir = new File(parentDirString);
+		if (!parentDir.exists()) {
+			parentDir.mkdirs();
+		}
+	}
+	
+	public static void saveCache (FileInputStream inFile, String filePath) {
+		mkCacheParentDir(filePath);
+		try {
+			File file = new File(Environment.getExternalStorageDirectory() 
+					+ CACHE_DIR + convertPath(filePath));
+			file.createNewFile();
+			FileOutputStream fos = new FileOutputStream(file);
+			FileChannel out = fos.getChannel();
+			FileChannel src = inFile.getChannel();
+			out.transferFrom(src, 0, inFile.getChannel().size());
+			src.close();
+			out.close();
+			fos.close();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO: handle exception
+			e.printStackTrace();
+		}
+	}
+	
+	private static String convertPath (String AbsPath) {
+		if (AbsPath.charAt(0) == '/') {
+			return AbsPath.substring(1);
+		}
+		return AbsPath;
+	}
+}
