@@ -44,6 +44,7 @@
 		  	android:label="Dropbox Sync" />
 		<activity android:name="jp.zx.zheng.cloudmusic.Finder"></activity>
 		<activity android:name="jp.zx.zheng.cloudmusic.LibraryFinder"></activity>
+		<service android:name="jp.zx.zheng.cloudmusic.MediaPlayerService"></service>
     </application>
     
 </manifest>

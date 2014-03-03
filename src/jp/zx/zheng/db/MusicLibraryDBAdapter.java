@@ -3,6 +3,7 @@ package jp.zx.zheng.db;
 import java.util.List;
 
 import jp.zx.zheng.cloudmusic.MusicLibraryParser;
+import jp.zx.zheng.cloudmusic.Track;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
@@ -42,8 +43,12 @@ public class MusicLibraryDBAdapter {
 		return mHelper.listAlbumArtists(mDb);
 	}
 	
-	public List<String> listAlbum(String artist) {
-		return mHelper.listAlbum(mDb, artist);
+	public List<String> listAlbum(String albumArtist) {
+		return mHelper.listAlbum(mDb, albumArtist);
+	}
+	
+	public List<Track> listAlbumTracks(String albumArtist, String album) {
+		return mHelper.listAlbumTracks(mDb, albumArtist, album);
 	}
 	
 	public void truncate() {

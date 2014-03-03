@@ -65,7 +65,7 @@ public class Dropbox {
     	return fileList;
     }
     
-    public FileInputStream getFileAndCache (DbxPath dbxPath) {
+    public FileInputStream downloadFileAndCache (DbxPath dbxPath) {
     	try {
 			DbxFileSystem dbxFs = DbxFileSystem.forAccount(mDbxAcctMgr.getLinkedAccount());
 			dbxFs.getSyncStatus();
@@ -80,6 +80,6 @@ public class Dropbox {
     }
     
     public FileInputStream getFileAndCache (String path) {
-    	return getFileAndCache(new DbxPath(path));
+    	return downloadFileAndCache(new DbxPath(path));
     }
 }

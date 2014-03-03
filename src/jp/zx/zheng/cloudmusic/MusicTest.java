@@ -23,24 +23,35 @@ import android.os.storage.StorageManager;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.res.AssetManager;
+import android.graphics.Bitmap;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 import android.view.View.OnClickListener;
 
 public class MusicTest extends Activity {
 
+	private static final String TAG = MusicTest.class.getName();
+	
 	Ybox ybox;
 	Dropbox mDropbox;
 	MediaPlayer mp;
+	ToggleButton playButton;
+	MusicPlayer mMusicPlayer;
+	public static ImageView albumArtView;
+	
 	@Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_music_test);
-        
+        setContentView(R.layout.activity_main);
+    
+        mMusicPlayer = MusicPlayer.getInstance(getApplicationContext());
         Button loginButton = (Button)findViewById(R.id.login);
         loginButton.setOnClickListener(new OnClickListener() {
 			
@@ -96,6 +107,25 @@ public class MusicTest extends Activity {
 			}
         	
         });
+        
+        playButton = (ToggleButton)findViewById(R.id.playButtun);
+        playButton.setChecked(false);
+        playButton.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				if(playButton.isChecked()) {
+					Log.d(TAG, "pause");
+					mMusicPlayer.pause();
+				} else {
+					Log.d(TAG, "start");
+					mMusicPlayer.start();
+				}
+				
+			}
+		});
+        
+        albumArtView = (ImageView)findViewById(R.id.albumArt);
         TextView text = (TextView)findViewById(R.id.textView1);
         Ybox.getInstance().init(this);
         mDropbox = new Dropbox(getApplicationContext());
@@ -110,6 +140,10 @@ public class MusicTest extends Activity {
 		if (mDropbox.isLogin()) {
 			//dropBoxRoot();
 		}
+	}
+	
+	public static void setAlbumArt(Bitmap bitmap) {		
+		albumArtView.setImageBitmap(bitmap);
 	}
 	
 	private void dropBoxRoot(){

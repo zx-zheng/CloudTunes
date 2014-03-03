@@ -5,7 +5,10 @@ import jp.zx.zheng.db.MusicLibraryDBAdapter;
 import jp.zx.zheng.musictest.R;
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Adapter;
 import android.widget.AdapterView;
@@ -15,14 +18,19 @@ import android.widget.TextView;
 
 public class LibraryFinder extends Activity {
 
+	private static final String TAG = LibraryFinder.class.getName();
 	private ListView mListView;
 	private MusicLibraryDBAdapter mDbAdapter;
+	private String mCurrentArtist;
+	private String mCurrentAlbum;
+	private MusicPlayer mMusicPlayer;
 	
 	protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.finder);
         mListView = (ListView)findViewById(R.id.FileListView);
         mDbAdapter = new MusicLibraryDBAdapter(getApplicationContext());
+        mMusicPlayer = MusicPlayer.getInstance(getApplicationContext());
         loadArtists();
 	}
 	
@@ -39,14 +47,44 @@ public class LibraryFinder extends Activity {
 		@Override
 		public void onItemClick(AdapterView<?> parent, View view, int arg2,
 				long arg3) {
-			// TODO Auto-generated method stub
 			TextView textView = (TextView)view;
+			mCurrentArtist = textView.getText().toString();
 			ArrayAdapter<String> adapter = new ArrayAdapter<String>(getApplicationContext(),
 					R.layout.simple_list_item_1_black, 
-					mDbAdapter.listAlbum(textView.getText().toString()));
+					mDbAdapter.listAlbum(mCurrentArtist));
 			mListView.setAdapter(adapter);
-			mListView.setOnItemClickListener(null);
+			mListView.setOnItemClickListener(new albumClickedListener());
 		}
-		
+	}
+	
+	private class albumClickedListener implements AdapterView.OnItemClickListener {
+
+		@Override
+		public void onItemClick(AdapterView<?> parent, View view, int arg2,
+				long arg3) {
+			TextView textView = (TextView)view;
+			mCurrentAlbum = textView.getText().toString();
+			ArrayAdapter<Track> adapter = new ArrayAdapter<Track>(getApplicationContext(),
+					R.layout.simple_list_item_1_black, 
+					mDbAdapter.listAlbumTracks(mCurrentArtist, mCurrentAlbum));
+			mListView.setAdapter(adapter);
+			mListView.setOnItemClickListener(new trackClickedListener());
+		}
+	}
+	
+	private class trackClickedListener implements AdapterView.OnItemClickListener {
+
+		@Override
+		public void onItemClick(AdapterView<?> parent, View view, int position,
+				long arg3) {
+			Track track = (Track) mListView.getItemAtPosition(position);
+			mMusicPlayer.playMusic(track.getLocation());
+			byte[] albumArtData = mMusicPlayer.getAlbumArt();
+			if (albumArtData != null) {
+				MusicTest.setAlbumArt(
+						BitmapFactory.decodeByteArray(albumArtData, 0, albumArtData.length));
+			}
+			Log.d(TAG, track.getName());
+		}
 	}
 }

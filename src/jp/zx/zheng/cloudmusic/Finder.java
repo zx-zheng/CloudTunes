@@ -67,7 +67,7 @@ public class Finder extends Activity {
 	private void playMusic(DbxPath dbxPath) {
 		FileInputStream file;
 		if (!CacheManager.isCached(dbxPath.toString())){
-			file = mDropbox.getFileAndCache(dbxPath);
+			file = mDropbox.downloadFileAndCache(dbxPath);
 			Log.d("Main", "file cached");
 		} else {
 			file = CacheManager.getCacheFile(dbxPath.toString());
