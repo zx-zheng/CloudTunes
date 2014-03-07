@@ -1,5 +1,7 @@
 package jp.zx.zheng.cloudmusic;
 
+import java.util.List;
+
 import jp.zx.zheng.cloudmusic.Finder.FinderClickedListener;
 import jp.zx.zheng.db.MusicLibraryDBAdapter;
 import jp.zx.zheng.musictest.R;
@@ -24,6 +26,8 @@ public class LibraryFinder extends Activity {
 	private String mCurrentArtist;
 	private String mCurrentAlbum;
 	private MusicPlayer mMusicPlayer;
+	
+	private List<Track> mTempAlbum;
 	
 	protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -64,9 +68,10 @@ public class LibraryFinder extends Activity {
 				long arg3) {
 			TextView textView = (TextView)view;
 			mCurrentAlbum = textView.getText().toString();
+			mTempAlbum = mDbAdapter.listAlbumTracks(mCurrentArtist, mCurrentAlbum);
 			ArrayAdapter<Track> adapter = new ArrayAdapter<Track>(getApplicationContext(),
 					R.layout.simple_list_item_1_black, 
-					mDbAdapter.listAlbumTracks(mCurrentArtist, mCurrentAlbum));
+					mTempAlbum);
 			mListView.setAdapter(adapter);
 			mListView.setOnItemClickListener(new trackClickedListener());
 		}
@@ -77,14 +82,15 @@ public class LibraryFinder extends Activity {
 		@Override
 		public void onItemClick(AdapterView<?> parent, View view, int position,
 				long arg3) {
-			Track track = (Track) mListView.getItemAtPosition(position);
-			mMusicPlayer.playMusic(track.getLocation());
-			byte[] albumArtData = mMusicPlayer.getAlbumArt();
-			if (albumArtData != null) {
-				MusicTest.setAlbumArt(
-						BitmapFactory.decodeByteArray(albumArtData, 0, albumArtData.length));
+			//Track track = (Track) mListView.getItemAtPosition(position);
+			//mMusicPlayer.playMusic(track);
+			//Log.d(TAG, track.getName());
+			mMusicPlayer.addToList(mTempAlbum, position);
+			/*
+			for(int i = position + 1; i < mListView.getCount(); i++) {
+				mMusicPlayer.addToList((Track) mListView.getItemAtPosition(i));
 			}
-			Log.d(TAG, track.getName());
+			*/
 		}
 	}
 }

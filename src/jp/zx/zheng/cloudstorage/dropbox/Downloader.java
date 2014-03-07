@@ -5,6 +5,8 @@ import java.util.Iterator;
 import java.util.List;
 
 import jp.zx.zheng.cloudmusic.MusicPlayer;
+import jp.zx.zheng.cloudmusic.Track;
+import jp.zx.zheng.storage.CacheManager;
 
 import com.dropbox.sync.android.DbxFile;
 import com.dropbox.sync.android.DbxFileSystem;
@@ -13,7 +15,7 @@ import com.dropbox.sync.android.DbxPath;
 import android.os.AsyncTask;
 import android.util.Log;
 
-public class Downloader extends AsyncTask<DbxPath, Integer, List<String>> {
+public class Downloader extends AsyncTask<Track, Track, List<Track>> {
 
 	private static final String TAG = Downloader.class.getName();
 	private Dropbox mDropbox;
@@ -24,25 +26,29 @@ public class Downloader extends AsyncTask<DbxPath, Integer, List<String>> {
 	}
 	
 	@Override
-	protected List<String> doInBackground(DbxPath... paths) {
+	protected List<Track> doInBackground(Track... tracks) {
 		
-		ArrayList<String> list = new ArrayList<String>();
+		ArrayList<Track> list = new ArrayList<Track>();
 		
-		for (int i = 0; i < paths.length; i++) {
-			Log.d(TAG, "Downloading " + paths[i]);
-			if(mDropbox.downloadFileAndCache(paths[i]) != null) {
-				list.add(paths[i].toString());
-				Log.d(TAG, "Download complete " + paths[i]);
+		for (int i = 0; i < tracks.length; i++) {
+			Log.d(TAG, "Downloading " + tracks[i]);
+			if(!CacheManager.isCached(tracks[i]) && mDropbox.downloadFileAndCache(tracks[i]) != null) {
+				list.add(tracks[i]);
+				Log.d(TAG, "Download complete " + tracks[i]);
 			}
+			publishProgress(tracks[i]);
 		}
 		return list;
 	}
 	
+	@Override  
+    protected void onProgressUpdate(Track... tracks) {  
+		mMusicPlayer.addToReadyQueue(tracks[0]);
+	}
+	
 	@Override
-	protected void onPostExecute(List<String> list) {
-        for(String path : list) {
-        	mMusicPlayer.addToQueue(path);
-        }
+	protected void onPostExecute(List<Track> tracks) {
+        
     }
 
 }

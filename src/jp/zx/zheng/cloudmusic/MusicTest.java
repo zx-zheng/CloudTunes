@@ -24,12 +24,17 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
+import android.graphics.Point;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
@@ -44,7 +49,8 @@ public class MusicTest extends Activity {
 	MediaPlayer mp;
 	ToggleButton playButton;
 	MusicPlayer mMusicPlayer;
-	public static ImageView albumArtView;
+	private ImageView mAlbumArtView;
+	private SeekBar mSeekBar;
 	
 	@Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +58,7 @@ public class MusicTest extends Activity {
         setContentView(R.layout.activity_main);
     
         mMusicPlayer = MusicPlayer.getInstance(getApplicationContext());
+        
         Button loginButton = (Button)findViewById(R.id.login);
         loginButton.setOnClickListener(new OnClickListener() {
 			
@@ -124,8 +131,14 @@ public class MusicTest extends Activity {
 				
 			}
 		});
-        
-        albumArtView = (ImageView)findViewById(R.id.albumArt);
+        Point windowSize = new Point();
+        getWindowManager().getDefaultDisplay().getSize(windowSize);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(windowSize.x, windowSize.x);
+        mAlbumArtView = (ImageView)findViewById(R.id.albumArt);
+        mAlbumArtView.setLayoutParams(params);
+        mMusicPlayer.setAlbumArtView(mAlbumArtView);
+        mSeekBar = (SeekBar)findViewById(R.id.musicSeekBar);
+        mMusicPlayer.setSeekBar(mSeekBar);
         TextView text = (TextView)findViewById(R.id.textView1);
         Ybox.getInstance().init(this);
         mDropbox = new Dropbox(getApplicationContext());
@@ -142,8 +155,8 @@ public class MusicTest extends Activity {
 		}
 	}
 	
-	public static void setAlbumArt(Bitmap bitmap) {		
-		albumArtView.setImageBitmap(bitmap);
+	public void setAlbumArt(Bitmap bitmap) {		
+		mAlbumArtView.setImageBitmap(bitmap);
 	}
 	
 	private void dropBoxRoot(){
@@ -155,29 +168,6 @@ public class MusicTest extends Activity {
 		}
 		String testFile = "02 自由の翼.m4a";
 		FileInputStream file;
-		if (!CacheManager.isCached(testFile)){
-			file = mDropbox.getFileAndCache(testFile);
-			CacheManager.saveCache(file, testFile);
-			Log.d("Main", "file cached");
-		} else {
-			file = CacheManager.getCacheFile(testFile);
-			Log.d("Main", "read cache");
-		}
-		try {
-			mp.setDataSource(file.getFD());
-			Toast.makeText(this, "Success, Path has been set", Toast.LENGTH_SHORT).show();
-			mp.prepare();
-			mp.start();
-		} catch (IllegalArgumentException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IllegalStateException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 	}
 
     @Override

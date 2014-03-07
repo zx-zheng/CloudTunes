@@ -9,9 +9,11 @@ import android.media.MediaPlayer;
 import android.os.Binder;
 import android.os.IBinder;
 
-public class MediaPlayerService extends Service implements MediaPlayer.OnPreparedListener{
+public class MediaPlayerService extends Service 
+implements MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener{
 	
 	private MediaPlayer mMediaPlayer;
+	private int mMusicDuration;
 	
 	public class MediaPlayerBinder extends Binder {
 		MediaPlayerService getService() {
@@ -22,6 +24,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnPrepare
     public void onCreate() {
 		mMediaPlayer = new MediaPlayer();
 		mMediaPlayer.setOnPreparedListener(this);
+		mMediaPlayer.setOnCompletionListener(this);
 	}
 	
 	@Override
@@ -63,9 +66,27 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnPrepare
 		mMediaPlayer.start();
 	}
 	
+	public int getDuration() {
+		return mMusicDuration;
+	}
+	
+	public int getCurrentPosition() {
+		return mMediaPlayer.getCurrentPosition();
+	}
+	
+	public void seekTo(int pos) {
+		mMediaPlayer.seekTo(pos);
+	}
+	
 	@Override
 	public void onPrepared(MediaPlayer mp) {
+		mMusicDuration = mMediaPlayer.getDuration();
 		mp.start();		
+	}
+
+	@Override
+	public void onCompletion(MediaPlayer mp) {
+		MusicPlayer.getInstance(getApplicationContext()).playNextTrack();
 	}
 
 }

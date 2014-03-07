@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import jp.zx.zheng.cloudmusic.Track;
 import jp.zx.zheng.storage.CacheManager;
 import android.app.Activity;
 import android.content.Context;
@@ -65,21 +66,21 @@ public class Dropbox {
     	return fileList;
     }
     
-    public FileInputStream downloadFileAndCache (DbxPath dbxPath) {
+    public FileInputStream downloadFileAndCache (Track track) {
     	try {
 			DbxFileSystem dbxFs = DbxFileSystem.forAccount(mDbxAcctMgr.getLinkedAccount());
 			dbxFs.getSyncStatus();
-			DbxFile file = dbxFs.open(dbxPath);
-			CacheManager.saveCache(file.getReadStream(), dbxPath.toString());
+			DbxFile file = dbxFs.open(CacheManager.pathTodbxPath(track.getLocation()));
+			CacheManager.saveCache(file.getReadStream(), track);
 			file.close();
-			return CacheManager.getCacheFile(dbxPath.toString());
+			return CacheManager.getCacheFile(track);
     	} catch (IOException e) {
 			e.printStackTrace();
 		}
     	return null;
     }
     
-    public FileInputStream getFileAndCache (String path) {
-    	return downloadFileAndCache(new DbxPath(path));
+    public FileInputStream getFileAndCache (Track track) {
+    	return downloadFileAndCache(track);
     }
 }

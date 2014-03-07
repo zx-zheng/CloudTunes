@@ -64,6 +64,7 @@ public class Finder extends Activity {
 		return true;
 	}
 	
+	/*
 	private void playMusic(DbxPath dbxPath) {
 		FileInputStream file;
 		if (!CacheManager.isCached(dbxPath.toString())){
@@ -90,6 +91,7 @@ public class Finder extends Activity {
 			e.printStackTrace();
 		}
 	}
+	*/
 	
 	public class FinderClickedListener implements AdapterView.OnItemClickListener {
 
@@ -100,7 +102,7 @@ public class Finder extends Activity {
 			mParentPath = mCurrentPath;
 			mCurrentPath = new DbxPath(textView.getText().toString());
 			if (!reloadListView()) {
-				playMusic(mCurrentPath);
+				//playMusic(mCurrentPath);
 				mCurrentPath = mParentPath;
 			}
 		}

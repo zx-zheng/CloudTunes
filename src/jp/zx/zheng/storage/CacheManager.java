@@ -8,20 +8,29 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 
+import jp.zx.zheng.cloudmusic.MusicPlayer;
+import jp.zx.zheng.cloudmusic.Track;
+
+import com.dropbox.sync.android.DbxPath;
+
 import android.os.Environment;
+import android.util.Log;
 
 public class CacheManager {
 
+	private static final String TAG = CacheManager.class.getName();
 	private static final String CACHE_DIR = "/CloudMusic/";
 	
-	public static boolean isCached (String path) {
-		System.out.println(Environment.getExternalStorageDirectory());
-		String fullPath = Environment.getExternalStorageDirectory() + CACHE_DIR + convertPath(path);
+	public static boolean isCached (Track track) {
+		//System.out.println(Environment.getExternalStorageDirectory());
+		String trackPath = pathTodbxPath(track.getLocation()).toString();
+		String fullPath = Environment.getExternalStorageDirectory() + CACHE_DIR + convertPath(trackPath);
 		return new File(fullPath).exists();
 	}
 	
-	public static FileInputStream getCacheFile (String path) {
-		String fullPath = Environment.getExternalStorageDirectory() + CACHE_DIR + convertPath(path);
+	public static FileInputStream getCacheFile (Track track) {
+		String trackPath = pathTodbxPath(track.getLocation()).toString();
+		String fullPath = Environment.getExternalStorageDirectory() + CACHE_DIR + convertPath(trackPath);
 		File file = new File(fullPath);
 		try {
 			return new FileInputStream(file);
@@ -40,11 +49,12 @@ public class CacheManager {
 		}
 	}
 	
-	public static void saveCache (FileInputStream inFile, String filePath) {
-		mkCacheParentDir(filePath);
+	public static void saveCache (FileInputStream inFile, Track track) {
+		String trackPath = pathTodbxPath(track.getLocation()).toString();
+		mkCacheParentDir(track.getLocation());
 		try {
 			File file = new File(Environment.getExternalStorageDirectory() 
-					+ CACHE_DIR + convertPath(filePath));
+					+ CACHE_DIR + convertPath(trackPath));
 			file.createNewFile();
 			FileOutputStream fos = new FileOutputStream(file);
 			FileChannel out = fos.getChannel();
@@ -67,5 +77,11 @@ public class CacheManager {
 			return AbsPath.substring(1);
 		}
 		return AbsPath;
+	}
+	
+	public static DbxPath pathTodbxPath(String path) {
+		String relativePath = path.substring(path.indexOf("iTunes") - 1);
+		Log.d(TAG, relativePath);
+		return new DbxPath(relativePath);
 	}
 }
