@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#eee"
+            android:clickable="true"
+            android:focusable="false"
+            android:orientation="vertical" >
+	
+	    	<TextView
+    	    	android:id="@+id/textView1"
+        		android:layout_width="wrap_content"
+	        	android:layout_height="wrap_content"
+    	    	android:text="@string/hello_world" />
+
+		    <Button
+    		    android:id="@+id/login"
+        		style="?android:attr/buttonStyleSmall"
+	        	android:layout_width="wrap_content"
+    	    	android:layout_height="wrap_content"
+	    	    android:text="Login" />
+
+    		<Button
+	        	android:id="@+id/parse"
+    	    	android:layout_width="wrap_content"
+        		android:layout_height="wrap_content"
+        		android:text="Parse" />
+
+	    	<Button
+    	    	android:id="@+id/select"
+        		android:layout_width="wrap_content"
+        		android:layout_height="wrap_content"
+		        android:text="select" />
+	
+    		<Button
+        		android:id="@+id/library"
+	        	android:layout_width="wrap_content"
+    	    	android:layout_height="wrap_content"
+        		android:text="library" />
+</LinearLayout>

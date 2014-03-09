@@ -51,10 +51,11 @@ public class CacheManager {
 	
 	public static void saveCache (FileInputStream inFile, Track track) {
 		String trackPath = pathTodbxPath(track.getLocation()).toString();
-		mkCacheParentDir(track.getLocation());
+		mkCacheParentDir(trackPath);
 		try {
 			File file = new File(Environment.getExternalStorageDirectory() 
 					+ CACHE_DIR + convertPath(trackPath));
+			Log.d(TAG, "save: " + file.getAbsolutePath());
 			file.createNewFile();
 			FileOutputStream fos = new FileOutputStream(file);
 			FileChannel out = fos.getChannel();
@@ -63,6 +64,7 @@ public class CacheManager {
 			src.close();
 			out.close();
 			fos.close();
+			Log.d(TAG, track.getName() + " cached");
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -81,7 +83,7 @@ public class CacheManager {
 	
 	public static DbxPath pathTodbxPath(String path) {
 		String relativePath = path.substring(path.indexOf("iTunes") - 1);
-		Log.d(TAG, relativePath);
+		//Log.d(TAG, relativePath);
 		return new DbxPath(relativePath);
 	}
 }

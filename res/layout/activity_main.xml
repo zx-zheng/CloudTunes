@@ -12,96 +12,61 @@
     	android:layout_gravity="bottom"
     	app:collapsedHeight="68dp"
     	app:shadowHeight="4dp"
-    	app:dragView="@+id/name">
+    	app:dragView="@+id/dragView">
     	
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="#eee"
-            android:clickable="true"
+        <android.support.v4.view.ViewPager xmlns:android="http://schemas.android.com/apk/res/android"
+    		android:id="@+id/pager"
+    		android:layout_width="match_parent"
+		    android:layout_height="match_parent"
+		    android:clickable="true"
             android:focusable="false"
-            android:orientation="vertical" >
-	
-    	<TextView
-        	android:id="@+id/textView1"
-        	android:layout_width="wrap_content"
-        	android:layout_height="wrap_content"
-        	android:text="@string/hello_world" />
-
-	    <Button
-    	    android:id="@+id/login"
-        	style="?android:attr/buttonStyleSmall"
-        	android:layout_width="wrap_content"
-        	android:layout_height="wrap_content"
-	        android:text="Login" />
-
-    	<Button
-	        android:id="@+id/parse"
-    	    android:layout_width="wrap_content"
-        	android:layout_height="wrap_content"
-        	android:text="Parse" />
-
-    	<Button
-        	android:id="@+id/select"
-        	android:layout_width="wrap_content"
-        	android:layout_height="wrap_content"
-	        android:text="select" />
-
-    	<Button
-        	android:id="@+id/library"
-        	android:layout_width="wrap_content"
-        	android:layout_height="wrap_content"
-        	android:text="library" />
-    	
-		<ToggleButton
-    		    android:id="@+id/playButtun"
-    		    android:layout_width="wrap_content"
-    		    android:layout_height="wrap_content"
-       		    android:background="@drawable/playbutton"
-       		    android:adjustViewBounds="true"
-    		    android:gravity="center_vertical|right" />
-
-		
-
-    	</LinearLayout>
-
+            android:focusableInTouchMode="true"/>
        
     	<LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:background="#eee"
             android:orientation="vertical">
-
+    	    
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="68dp"
                 android:orientation="horizontal">
 
-                <TextView
-                    android:id="@+id/name"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:textSize="14sp"
-                    android:gravity="center_vertical"
-                    android:paddingLeft="10dp"/>
+                <LinearLayout
+            		android:layout_width="0dp"
+            		android:layout_height="match_parent"
+            		android:layout_weight="1"
+            		android:background="#eee"
+            		android:orientation="vertical"
+            		>
+                	<TextView
+	                    android:id="@+id/trackTitleLabel"
+                    	android:layout_width="match_parent"
+                    	android:layout_height="0dp"
+                    	android:layout_weight="1"
+                    	android:gravity="center_vertical"
+                    	android:paddingLeft="10dp"/>
 
-				<Button
-                    android:id="@+id/follow"
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:textSize="14sp"
-                    android:gravity="center_vertical|right"
-                    android:paddingRight="10dp"
-                    android:paddingLeft="10dp"/>
+	                <TextView
+    	                android:id="@+id/artistLabel"
+        	            android:layout_width="match_parent"
+            	        android:layout_height="0dp"
+                	    android:layout_weight="1"
+	                    android:gravity="center_vertical"
+    	                android:paddingLeft="10dp"/>
+				</LinearLayout>
+				
+				
 				<ToggleButton
-    		    android:id="@+id/playButtun"
-    		    android:layout_width="wrap_content"
-    		    android:layout_height="wrap_content"
-       		    android:background="@drawable/playbutton"
-                android:paddingRight="10dp"
-                android:paddingLeft="10dp"
-       		    android:gravity="center_vertical|right" />
+	    		    android:id="@+id/playButtun"
+    			    android:layout_width="wrap_content"
+    			    android:layout_height="match_parent"
+    			   
+	       		    android:background="@drawable/playbutton"
+    	            android:paddingRight="10dp"
+        	        android:paddingLeft="10dp"
+       			    android:gravity="center_vertical|right" />
 
             </LinearLayout>
 			<ImageView
@@ -117,7 +82,13 @@
 		    android:layout_height="wrap_content" 
 		    android:progress="0"
    			android:max="100"/>
-       	
+       		
+			<View
+    		    android:layout_width="match_parent"
+            	android:layout_height="match_parent"
+            	android:id="@+id/dragView"
+            	android:visibility="invisible"
+    		    />
         </LinearLayout>
     </com.sothree.slidinguppanel.SlidingUpPanelLayout>
 

@@ -53,6 +53,7 @@ public class Dropbox {
 				List<DbxFileInfo> infos = dbxFs.listFolder(dir);
 				for (DbxFileInfo info : infos) {
 					fileList.add(info.path.toString());
+					Log.d(TAG, info.path.toString());
 				}
 			} else {
 				return null;
@@ -70,10 +71,24 @@ public class Dropbox {
     	try {
 			DbxFileSystem dbxFs = DbxFileSystem.forAccount(mDbxAcctMgr.getLinkedAccount());
 			dbxFs.getSyncStatus();
-			DbxFile file = dbxFs.open(CacheManager.pathTodbxPath(track.getLocation()));
-			CacheManager.saveCache(file.getReadStream(), track);
-			file.close();
-			return CacheManager.getCacheFile(track);
+			DbxPath dbxPath = CacheManager.pathTodbxPath(track.getLocation());
+			if(dbxFs.exists(dbxPath)){
+				Log.d(TAG, "open: " + dbxPath.toString());
+				DbxFile file = dbxFs.open(dbxPath);
+				CacheManager.saveCache(file.getReadStream(), track);
+				file.close();
+				return CacheManager.getCacheFile(track);
+			} else {
+				Log.w(TAG, dbxPath.toString() + " not found");
+			}
+			/*
+			if(dbxFs.exists(new DbxPath("/itunes/itunes media/music/the idolm@ster/THE IDOLM@STER 765PRO ALLSTARS+ GRE@TEST BEST! -THE IDOLM@STER HISTORY-/15 MUSIC♪ (M@STER VERSION).m4a"))){
+				Log.d(TAG, "exist");
+			} else {
+				Log.d(TAG, "not exist");
+			}
+			*/
+
     	} catch (IOException e) {
 			e.printStackTrace();
 		}

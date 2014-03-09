@@ -8,6 +8,8 @@ import java.util.List;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.Volley;
 import com.dropbox.sync.android.DbxPath;
+import com.sothree.slidinguppanel.SlidingUpPanelLayout;
+import com.sothree.slidinguppanel.SlidingUpPanelLayout.PanelSlideListener;
 
 import jp.zx.zheng.cloudstorage.dropbox.Dropbox;
 import jp.zx.zheng.cloudstorage.ybox.YConnectImplicitWebViewActivity;
@@ -20,14 +22,26 @@ import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.storage.StorageManager;
+import android.app.ActionBar;
+import android.app.ActionBar.Tab;
+import android.app.ActionBar.TabListener;
 import android.app.Activity;
+import android.app.FragmentTransaction;
 import android.content.Intent;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.Point;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.view.ViewPager;
+import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.view.Menu;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -40,7 +54,7 @@ import android.widget.Toast;
 import android.widget.ToggleButton;
 import android.view.View.OnClickListener;
 
-public class MusicTest extends Activity {
+public class MusicTest extends FragmentActivity implements TabListener {
 
 	private static final String TAG = MusicTest.class.getName();
 	
@@ -49,74 +63,76 @@ public class MusicTest extends Activity {
 	MediaPlayer mp;
 	ToggleButton playButton;
 	MusicPlayer mMusicPlayer;
+	private ActionBar mActionBar;
+	private AppSectionsPagerAdapter mAppSectionsPagerAdapter;
+	private ViewPager mViewPager;
 	private ImageView mAlbumArtView;
 	private SeekBar mSeekBar;
+	private SlidingUpPanelLayout mSlidingUpPanelLayout;
+	private View mDragView;
+	private static ArtistListFragment mArtistListFragment;
+	private static ButtonsFragment mButtonsFragment;
 	
 	@Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        
+        mSlidingUpPanelLayout = (SlidingUpPanelLayout) findViewById(R.id.sliding_layout);
+        mSlidingUpPanelLayout.setShadowDrawable(getResources().getDrawable(R.drawable.above_shadow));
+       
+        mDragView = findViewById(R.id.dragView);
+        mArtistListFragment = new ArtistListFragment();
+        mButtonsFragment = new ButtonsFragment();
     
         mMusicPlayer = MusicPlayer.getInstance(getApplicationContext());
         
-        Button loginButton = (Button)findViewById(R.id.login);
-        loginButton.setOnClickListener(new OnClickListener() {
-			
-			@Override
-			public void onClick(View v) {
-				// TODO Auto-generated method stub
-				//Intent loginIntent = new Intent(MusicTest.this, YConnectImplicitWebViewActivity.class);
-				//startActivityForResult(loginIntent, 0);
-				//Ybox.getInstance().requestFileList(MusicTest.this);
-				mDropbox.login(MusicTest.this);
-				Intent finder = new Intent(getApplicationContext(), Finder.class);
-				startActivity(finder);
-				}
-		});   
-        Button parseButton = (Button)findViewById(R.id.parse);
-        parseButton.setOnClickListener(new OnClickListener() {
-			
-			@Override
-			public void onClick(View v) {
-				AssetManager as = getResources().getAssets();
-				try {
-					InputStream xml = as.open("iTunes Music Library.xml");
-					MusicLibraryParser parser = new MusicLibraryParser(getApplicationContext(), xml);
-					parser.parse();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		});
-        
-        Button selectButton = (Button)findViewById(R.id.select);
-        selectButton.setOnClickListener(new OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				// TODO Auto-generated method stub
-				MusicLibraryDBAdapter adapter = new MusicLibraryDBAdapter(getApplicationContext());
-				adapter.open();
-				//adapter.selectTracks();
-				adapter.listAlbumArtists();
-				adapter.close();
-			}        	
-        });
-        
-        Button libraryButton = (Button)findViewById(R.id.library);
-        libraryButton.setOnClickListener(new OnClickListener() {
+        mAppSectionsPagerAdapter = new AppSectionsPagerAdapter(getSupportFragmentManager());
+        // Set up the action bar.
+        mActionBar = getActionBar();
 
-			@Override
-			public void onClick(View v) {
-				// TODO Auto-generated method stub
-				Intent intent = new Intent(getApplicationContext(), LibraryFinder.class);
-				startActivity(intent);
-			}
-        	
+        // Specify that the Home/Up button should not be enabled, since there is no hierarchical
+        // parent.
+        mActionBar.setHomeButtonEnabled(false);
+
+        // Specify that we will be displaying tabs in the action bar.
+        mActionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
+        
+        mViewPager = (ViewPager) findViewById(R.id.pager);
+        mViewPager.setAdapter(mAppSectionsPagerAdapter);
+        mViewPager.setOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
+            @Override
+            public void onPageSelected(int position) {
+                // When swiping between different app sections, select the corresponding tab.
+                // We can also use ActionBar.Tab#select() to do this if we have a reference to the
+                // Tab.
+                mActionBar.setSelectedNavigationItem(position);
+            }
         });
+        
+        setTab();
+        
+        Point windowSize = new Point();
+        getWindowManager().getDefaultDisplay().getSize(windowSize);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(windowSize.x, windowSize.x);
+        mAlbumArtView = (ImageView)findViewById(R.id.albumArt);
+        mAlbumArtView.setLayoutParams(params);
+        mMusicPlayer.initAlbumArtView(mAlbumArtView);
+        mMusicPlayer.setAlbumArt();
+        
+        mMusicPlayer.initLabels(
+        		(TextView)findViewById(R.id.trackTitleLabel),
+        		(TextView)findViewById(R.id.artistLabel));
+        mSeekBar = (SeekBar)findViewById(R.id.musicSeekBar);
+        mMusicPlayer.initSeekBar(mSeekBar);
+        Ybox.getInstance().init(this);
+        mDropbox = new Dropbox(getApplicationContext());
+        //Ybox.getInstance().setSid(this);
         
         playButton = (ToggleButton)findViewById(R.id.playButtun);
-        playButton.setChecked(false);
+        playButton.setChecked(!mMusicPlayer.isPlayingMusic());
+        playButton.setMovementMethod(LinkMovementMethod.getInstance());
+        mMusicPlayer.setPlayButton(playButton);
         playButton.setOnClickListener(new OnClickListener() {
 			
 			@Override
@@ -128,24 +144,31 @@ public class MusicTest extends Activity {
 					Log.d(TAG, "start");
 					mMusicPlayer.start();
 				}
-				
 			}
-		});
-        Point windowSize = new Point();
-        getWindowManager().getDefaultDisplay().getSize(windowSize);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(windowSize.x, windowSize.x);
-        mAlbumArtView = (ImageView)findViewById(R.id.albumArt);
-        mAlbumArtView.setLayoutParams(params);
-        mMusicPlayer.setAlbumArtView(mAlbumArtView);
-        mSeekBar = (SeekBar)findViewById(R.id.musicSeekBar);
-        mMusicPlayer.setSeekBar(mSeekBar);
-        TextView text = (TextView)findViewById(R.id.textView1);
-        Ybox.getInstance().init(this);
-        mDropbox = new Dropbox(getApplicationContext());
-        //Ybox.getInstance().setSid(this);
-        text.setText(Ybox.getInstance().getSid());
-        mp = new MediaPlayer();
+        });
 	}
+	
+	private void setTab() {
+		// For each of the sections in the app, add a tab to the action bar.
+        for (int i = 0; i < mAppSectionsPagerAdapter.getCount(); i++) {
+            mActionBar.addTab(
+                    mActionBar.newTab()
+                            .setText(mAppSectionsPagerAdapter.getPageTitle(i))
+                            .setTabListener(this));
+        }
+	}
+	
+	void showChild(View v, StringBuilder sbTabs) {
+		System.out.printf("%s%s\n", sbTabs, v.getClass().getSimpleName());
+		if (v instanceof ViewGroup) {
+			ViewGroup layout = (ViewGroup) v;
+			sbTabs = sbTabs.append("\t");
+			for (int i = 0; i < layout.getChildCount(); i++) {
+				showChild(layout.getChildAt(i), new StringBuilder(sbTabs));
+			}
+		}
+	}
+
 	
 	@Override
 	protected void onResume() {
@@ -192,4 +215,47 @@ public class MusicTest extends Activity {
         return true;
     }
     
+    public static class AppSectionsPagerAdapter extends FragmentPagerAdapter {
+
+        public AppSectionsPagerAdapter(FragmentManager fm) {
+            super(fm);
+        }
+
+        @Override
+        public Fragment getItem(int i) {
+            switch (i) {
+                case 0:
+                    return mArtistListFragment;
+                default:
+                	return mButtonsFragment;
+            }
+        }
+
+        @Override
+        public int getCount() {
+            return 2;
+        }
+
+        @Override
+        public CharSequence getPageTitle(int position) {
+            return "Section " + (position + 1);
+        }
+    }
+
+	@Override
+	public void onTabReselected(Tab tab, FragmentTransaction ft) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onTabSelected(Tab tab, FragmentTransaction ft) {
+		mViewPager.setCurrentItem(tab.getPosition());
+	}
+
+	@Override
+	public void onTabUnselected(Tab tab, FragmentTransaction ft) {
+		// TODO Auto-generated method stub
+		
+	}
 }

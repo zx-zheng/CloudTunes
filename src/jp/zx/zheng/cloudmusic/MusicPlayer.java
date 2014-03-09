@@ -18,12 +18,15 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
+import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.IBinder;
 import android.sax.StartElementListener;
 import android.util.Log;
 import android.widget.ImageView;
 import android.widget.SeekBar;
+import android.widget.TextView;
+import android.widget.ToggleButton;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 
 import com.dropbox.sync.android.DbxPath;
@@ -35,9 +38,12 @@ public class MusicPlayer {
 	private static MusicPlayer mMusicPlayer;
 	private SeekBar mSeekbar;
 	private ImageView mAlbumArtView;
+	private ToggleButton mPlayButton;
+	private TextView mTrackNameLabel;
+	private TextView mArtistNameLabel;
 	
 	private Dropbox mDropbox;
-	private Downloader mDownloader;
+	private AsyncTask<Track, Track, List<Track>> mDownloader;
 	private MediaPlayerService mBoundMPservice;
 	private ServiceConnection mConnection;
 	private List<Track> mPlayList;
@@ -46,7 +52,8 @@ public class MusicPlayer {
 	private MediaMetadataRetriever mMediaMetaData;
 	private FileInputStream currentPlayingFile;
 	private Handler mHandler;
-	private boolean isPlaying = false;
+	private boolean isInPlayingState = false;
+	private boolean isPlayingMusic = false;
 	
 	private Runnable mSeekBarSetter = new Runnable() {
 		
@@ -56,7 +63,7 @@ public class MusicPlayer {
 			if (mSeekbar != null) {
 				mSeekbar.setProgress(mBoundMPservice.getCurrentPosition());
 			}
-			if (isPlaying) {
+			if (isInPlayingState) {
 				mHandler.postDelayed(this, 500);
 			}
 		}
@@ -94,7 +101,6 @@ public class MusicPlayer {
 
 	private MusicPlayer(Context context) {
 		mDropbox = new Dropbox(context);
-		mDownloader = new Downloader(mDropbox, this);
 		mPlayList = new ArrayList<Track>();
 		mReadyQueue = new LinkedList<Track>();
 		mHandler = new Handler();
@@ -116,7 +122,7 @@ public class MusicPlayer {
 				mConnection, Context.BIND_AUTO_CREATE);
 	}
 	
-	public void setAlbumArtView(ImageView view) {
+	public void initAlbumArtView(ImageView view) {
 		mAlbumArtView = view;
 	}
 	
@@ -131,9 +137,18 @@ public class MusicPlayer {
 		}
 	}
 	
-	public void setSeekBar(SeekBar seekBar) {
+	public void initSeekBar(SeekBar seekBar) {
 		mSeekbar = seekBar;
 		mSeekbar.setOnSeekBarChangeListener(mSeekBarChangeListener);
+	}
+	
+	public void initLabels(TextView trackNameLabel, TextView artistNameLabel) {
+		mTrackNameLabel = trackNameLabel;
+		mArtistNameLabel = artistNameLabel;
+	}
+	
+	public void setPlayButton(ToggleButton button) {
+		mPlayButton = button;
 	}
 
 	public void playMusic(Track track) {
@@ -150,15 +165,29 @@ public class MusicPlayer {
 		currentPlayingFile = file;
 		mBoundMPservice.play(file);
 		setAlbumArt();
-		isPlaying = true;
+		isInPlayingState = true;
+		isPlayingMusic = true;
+		setPlayButtonStatus();
+		setTrackLabels(track);
 		mHandler.postDelayed(mSeekBarSetter, 500);
 	}
 	
+	private void setTrackLabels(Track track) {
+		mTrackNameLabel.setText(track.getName());
+		mArtistNameLabel.setText(track.getArtist());
+	}
+	
 	public void playNextTrack() {
-		isPlaying = false;
-		currentPos++;
-		if(currentPos == mPlayList.size()) {
+		isInPlayingState = false;
+		isPlayingMusic = false;
+		setPlayButtonStatus();
+		if(mPlayList.size() == 0) {
+			return;
+		}
+		if(currentPos == mPlayList.size() - 1) {
 			currentPos = 0;
+		} else {
+			currentPos++;
 		}
 		if(mReadyQueue.contains(mPlayList.get(currentPos))) {
 			playMusic(mPlayList.get(currentPos));
@@ -166,17 +195,34 @@ public class MusicPlayer {
 	}
 	
 	public void start() {
-		mBoundMPservice.start();
+		if(mBoundMPservice.start()) {
+			isPlayingMusic = true;
+		}
+		setPlayButtonStatus();
 	}
 	
 	public void pause() {
 		mBoundMPservice.pause();
+		isPlayingMusic = false;
+		setPlayButtonStatus();
+	}
+	
+	private void setPlayButtonStatus() {
+		mPlayButton.setChecked(!isPlayingMusic);
+	}
+	
+	public boolean isPlayingMusic() {
+		return isPlayingMusic;
 	}
 	
 	public byte[] getAlbumArt() {
 		try {
-			mMediaMetaData.setDataSource(currentPlayingFile.getFD());
-			return mMediaMetaData.getEmbeddedPicture();
+			if(currentPlayingFile != null) {
+				mMediaMetaData.setDataSource(currentPlayingFile.getFD());
+				return mMediaMetaData.getEmbeddedPicture();
+			} else {
+				return null;
+			}
 		} catch (IllegalArgumentException e) {
 			e.printStackTrace();
 			return null;
@@ -195,15 +241,27 @@ public class MusicPlayer {
 		mPlayList.addAll(trackList);
 		currentPos = startPos;
 		preparePlayList();
+		playMusic(mPlayList.get(currentPos));
 	}
 	
 	private void preparePlayList() {
-		mDownloader.execute((Track[])mPlayList.toArray(new Track[]{}));
+		//prepare selected track first
+		Track[] trackArray = new Track[mPlayList.size()];
+		for(int i = currentPos; i < mPlayList.size(); i++) {
+			trackArray[i - currentPos] = mPlayList.get(i);
+		}
+		for(int i = 0; i < currentPos; i++) {
+			trackArray[i + mPlayList.size() - currentPos] = mPlayList.get(i);
+		}
+		if(mDownloader != null) {
+			mDownloader.cancel(true);
+		}
+		mDownloader = new Downloader(mDropbox, this).execute(trackArray);
 	}
 	
 	public void addToReadyQueue(Track track) {
 		mReadyQueue.offer(track);
-		if (mReadyQueue.contains(mPlayList.get(currentPos)) && !isPlaying) {
+		if (mReadyQueue.contains(mPlayList.get(currentPos)) && !isInPlayingState) {
 			playMusic(mPlayList.get(currentPos));
 		}
 	}

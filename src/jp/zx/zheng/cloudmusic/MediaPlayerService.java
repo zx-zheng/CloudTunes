@@ -62,8 +62,9 @@ implements MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener{
 		}
 	}
 	
-	public void start() {
+	public boolean start() {
 		mMediaPlayer.start();
+		return mMediaPlayer.isPlaying();
 	}
 	
 	public int getDuration() {

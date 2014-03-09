@@ -162,7 +162,8 @@ public class MusicLibraryParser {
 			} else if(tagText.equals(XML_NAME_YEAR)) {
 				year = Integer.parseInt(mXpp.nextText());
 			} else if(tagText.equals(XML_NAME_LOCATION)) {
-				location = URLDecoder.decode(mXpp.nextText(), "UTF-8");
+				//"+"がスペースにデコードされるため置換をおこなう
+				location = URLDecoder.decode(mXpp.nextText().replaceAll("\\+", "%2B"), "UTF-8");
 			} else if(tagText.equals(XML_NAME_MOVIE) || tagText.equals(XML_NAME_MUSIC_VIDEO)) {
 				mXpp.nextText();
 				isMovie = true;

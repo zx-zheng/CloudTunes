@@ -26,6 +26,7 @@ import android.widget.Toast;
 
 public class Finder extends Activity {
 	
+	private static final String TAG = Finder.class.getName();
 	public static final String PARENT_DIR = "parentDir";
 	private DbxPath mParentPath;
 	private DbxPath mCurrentPath;
@@ -55,6 +56,7 @@ public class Finder extends Activity {
 	
 	private boolean reloadListView () {
 		List<String> list = mDropbox.listDirectory(mCurrentPath);
+		Log.d(TAG, mCurrentPath.toString());
 		if (list == null) {
 			return false;
 		}
