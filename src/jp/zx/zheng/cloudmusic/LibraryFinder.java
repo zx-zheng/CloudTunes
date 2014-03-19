@@ -33,7 +33,7 @@ public class LibraryFinder extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.finder);
         mListView = (ListView)findViewById(R.id.FileListView);
-        mDbAdapter = new MusicLibraryDBAdapter(getApplicationContext());
+        mDbAdapter = MusicLibraryDBAdapter.instance;
         mMusicPlayer = MusicPlayer.getInstance(getApplicationContext());
         loadArtists();
 	}

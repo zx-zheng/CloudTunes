@@ -62,7 +62,7 @@ public class ButtonsFragment extends Fragment {
 			@Override
 			public void onClick(View v) {
 				// TODO Auto-generated method stub
-				MusicLibraryDBAdapter adapter = new MusicLibraryDBAdapter(getActivity().getApplicationContext());
+				MusicLibraryDBAdapter adapter = MusicLibraryDBAdapter.instance;
 				adapter.open();
 				//adapter.selectTracks();
 				adapter.listAlbumArtists();

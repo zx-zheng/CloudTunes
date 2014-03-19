@@ -15,7 +15,13 @@ public class MusicLibraryDBAdapter {
 	private SQLiteDatabase mDb;
 	private MusicLibraryDBHelper mHelper;
 	
-	public MusicLibraryDBAdapter(Context context) {
+	public static MusicLibraryDBAdapter instance;
+	
+	public static void init(Context context) {
+		instance = new MusicLibraryDBAdapter(context);
+	}
+	
+	private MusicLibraryDBAdapter(Context context) {
 		mHelper = new MusicLibraryDBHelper(context);
 	}
 	

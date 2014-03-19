@@ -51,7 +51,7 @@ public class MusicLibraryParser {
 		} catch (XmlPullParserException e) {
 			e.printStackTrace();
 		}
-		mDbadapter = new MusicLibraryDBAdapter(context);
+		mDbadapter = MusicLibraryDBAdapter.instance;
 	}
 	
 	public void parse(){

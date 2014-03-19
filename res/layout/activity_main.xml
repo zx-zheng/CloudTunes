@@ -9,20 +9,29 @@
     	android:id="@+id/sliding_layout"
     	android:layout_width="match_parent"
     	android:layout_height="match_parent"
-    	android:layout_gravity="bottom"
+    	android:gravity="bottom"
     	app:collapsedHeight="68dp"
     	app:shadowHeight="4dp"
-    	app:dragView="@+id/dragView">
+    	app:dragView="@+id/trackLabels">
     	
-        <android.support.v4.view.ViewPager xmlns:android="http://schemas.android.com/apk/res/android"
-    		android:id="@+id/pager"
-    		android:layout_width="match_parent"
-		    android:layout_height="match_parent"
-		    android:clickable="true"
-            android:focusable="false"
-            android:focusableInTouchMode="true"/>
+        <LinearLayout
+    	    android:id="@+id/mainLayout"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#eee"
+            android:orientation="vertical">
+            
+        	<android.support.v4.view.ViewPager xmlns:android="http://schemas.android.com/apk/res/android"
+    			android:id="@+id/pager"
+    			android:layout_width="match_parent"
+		    	android:layout_height="match_parent"
+		    	android:clickable="true"
+            	android:focusable="false"
+            	android:focusableInTouchMode="true"/>
+        </LinearLayout>
        
     	<LinearLayout
+    	    android:id="@+id/slideView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:background="#eee"
@@ -34,6 +43,7 @@
                 android:orientation="horizontal">
 
                 <LinearLayout
+                    android:id="@+id/trackLabels"
             		android:layout_width="0dp"
             		android:layout_height="match_parent"
             		android:layout_weight="1"
@@ -83,12 +93,7 @@
 		    android:progress="0"
    			android:max="100"/>
        		
-			<View
-    		    android:layout_width="match_parent"
-            	android:layout_height="match_parent"
-            	android:id="@+id/dragView"
-            	android:visibility="invisible"
-    		    />
+			
         </LinearLayout>
     </com.sothree.slidinguppanel.SlidingUpPanelLayout>
 

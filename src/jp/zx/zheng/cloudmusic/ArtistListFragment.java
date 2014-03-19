@@ -12,9 +12,12 @@ import android.support.v4.app.Fragment;
 import android.content.Intent;
 import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.View.OnTouchListener;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
@@ -28,6 +31,7 @@ public class ArtistListFragment extends Fragment {
 	private String mCurrentArtist;
 	private String mCurrentAlbum;
 	private MusicPlayer mMusicPlayer;
+	private AdapterView.OnItemClickListener mArtistListListener;
 	
 	private List<Track> mTempAlbum;
 	
@@ -35,10 +39,26 @@ public class ArtistListFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
             Bundle savedInstanceState) {
 		View rootView = inflater.inflate(R.layout.finder, container, false);
+		rootView.setOnTouchListener(new OnTouchListener() {
+        	
+        	@Override
+        	public boolean onTouch(View v, MotionEvent event) {
+				//Log.d(TAG, "artistList:onTouchEvent");
+				if(MusicTest.mSlidingUpPanelLayout.isExpanded()) {
+					//MusicTest.mSlidingUpPanelLayout.onTouchEvent(event);
+				}
+				return false;
+			}
+		});
+		
 		mListView = (ListView)rootView.findViewById(R.id.FileListView);
-        mDbAdapter = new MusicLibraryDBAdapter(getActivity());
+        mDbAdapter = MusicLibraryDBAdapter.instance;
         mMusicPlayer = MusicPlayer.getInstance(getActivity());
         loadArtists();
+        if(mArtistListListener != null) {
+        	Log.d(TAG, "listener changed");
+        	mListView.setOnItemClickListener(mArtistListListener);
+        }
 		return rootView;
 	}
 	
@@ -48,6 +68,13 @@ public class ArtistListFragment extends Fragment {
 				R.layout.simple_list_item_1_black, mDbAdapter.listAlbumArtists());
 		mListView.setAdapter(adapter);
 		mListView.setOnItemClickListener(new artistClickedListener());
+	}
+	
+	public void setArtistsListViewListener(AdapterView.OnItemClickListener listener) {
+		mArtistListListener = listener;
+		if(mListView != null) {
+			mListView.setOnItemClickListener(listener);
+		}
 	}
 	
 	private class artistClickedListener implements AdapterView.OnItemClickListener {

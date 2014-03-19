@@ -21,6 +21,7 @@ public class MusicLibraryDBHelper extends SQLiteOpenHelper {
 	
 	public static final String TABLE_TRACKS_NAME = "tracks";
 	public static final String TABLE_PLAYLISTS_NAME = "playlists";
+	public static final String TABLE_PLAYLIST_NAMES_NAME = "playlist_names";
 	public static final String COL_ID = "_id";
 	public static final String COL_NAME = "name";
 	public static final String COL_ARTIST = "artist";
@@ -34,7 +35,9 @@ public class MusicLibraryDBHelper extends SQLiteOpenHelper {
 	public static final String COL_PLAY_COUNT = "play_count";
 	public static final String COL_YEAR = "year";
 	public static final String COL_LOCATION = "location";
-	  
+	public static final String COL_TRACK_ID = "track_id";
+	public static final String COL_PLAYLIST_NAME = "playlist_id";
+		  
 	public MusicLibraryDBHelper(Context context) {
 		super(context, DATABASE_NAME, null, DATABASE_VERSION);
 	}
@@ -59,6 +62,17 @@ public class MusicLibraryDBHelper extends SQLiteOpenHelper {
 						+ COL_LOCATION + " TEXT NOT NULL"
 						+ ");");
 		
+		db.execSQL(
+				"CREATE TABLE " + TABLE_PLAYLISTS_NAME + " ("
+						+ COL_ID + " INTEGER PRIMARY KEY,"
+						+ COL_TRACK_ID + " INTEGER"
+						+ ");");
+		
+		db.execSQL(
+				"CREATE TABLE " + TABLE_PLAYLIST_NAMES_NAME + " ("
+						+ COL_ID + " INTEGER PRIMARY KEY,"
+						+ COL_PLAYLIST_NAME + " TEXT NOT NULL"
+						+ ");");
 	}
 
 	@Override

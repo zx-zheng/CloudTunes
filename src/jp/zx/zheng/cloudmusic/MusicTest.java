@@ -4,6 +4,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.zip.Inflater;
 
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.Volley;
@@ -38,16 +39,20 @@ import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.text.method.LinkMovementMethod;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -66,25 +71,40 @@ public class MusicTest extends FragmentActivity implements TabListener {
 	private ActionBar mActionBar;
 	private AppSectionsPagerAdapter mAppSectionsPagerAdapter;
 	private ViewPager mViewPager;
+	private ListView mAlbumListView;
+	private ListView mTrackListView;
 	private ImageView mAlbumArtView;
+	private String mCurrentArtist;
+	private String mCurrentAlbum;
 	private SeekBar mSeekBar;
-	private SlidingUpPanelLayout mSlidingUpPanelLayout;
+	public static SlidingUpPanelLayout mSlidingUpPanelLayout;
+	private static LinearLayout mMainLayout;
 	private View mDragView;
 	private static ArtistListFragment mArtistListFragment;
 	private static ButtonsFragment mButtonsFragment;
+	private int mCurrentMainView = 0;
+	public List<Track> mSelectedAlbum;
+	private static final int ARTISTS_VIEW = 0;
+	private static final int ALBUMS_VIEW = 1;
+	private static final int TRACKS_VIEW = 2;
 	
 	@Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         
+        //init DB adapter
+        MusicLibraryDBAdapter.init(getApplicationContext());
+        
+        mMainLayout = (LinearLayout) findViewById(R.id.mainLayout);
         mSlidingUpPanelLayout = (SlidingUpPanelLayout) findViewById(R.id.sliding_layout);
         mSlidingUpPanelLayout.setShadowDrawable(getResources().getDrawable(R.drawable.above_shadow));
        
-        mDragView = findViewById(R.id.dragView);
+        //mDragView = findViewById(R.id.dragView);
         mArtistListFragment = new ArtistListFragment();
+        mArtistListFragment.setArtistsListViewListener(new ArtistClickedListener());
         mButtonsFragment = new ButtonsFragment();
-    
+        
         mMusicPlayer = MusicPlayer.getInstance(getApplicationContext());
         
         mAppSectionsPagerAdapter = new AppSectionsPagerAdapter(getSupportFragmentManager());
@@ -109,6 +129,18 @@ public class MusicTest extends FragmentActivity implements TabListener {
                 mActionBar.setSelectedNavigationItem(position);
             }
         });
+        mViewPager.setOnTouchListener(new OnTouchListener() {
+			
+			@Override
+			public boolean onTouch(View v, MotionEvent event) {
+				//Log.d(TAG, "onTouchEvent");
+				if(mSlidingUpPanelLayout.isExpanded()) {
+					mSlidingUpPanelLayout.onTouchEvent(event);
+					return true;
+				}
+				return false;
+			}
+		});
         
         setTab();
         
@@ -117,6 +149,13 @@ public class MusicTest extends FragmentActivity implements TabListener {
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(windowSize.x, windowSize.x);
         mAlbumArtView = (ImageView)findViewById(R.id.albumArt);
         mAlbumArtView.setLayoutParams(params);
+        mAlbumArtView.setOnTouchListener(new OnTouchListener() {
+			
+			@Override
+			public boolean onTouch(View v, MotionEvent event) {
+				return true;
+			}
+		});
         mMusicPlayer.initAlbumArtView(mAlbumArtView);
         mMusicPlayer.setAlbumArt();
         
@@ -146,6 +185,70 @@ public class MusicTest extends FragmentActivity implements TabListener {
 				}
 			}
         });
+        
+        mAlbumListView = (ListView) (getLayoutInflater().inflate(R.layout.album_list, null));
+        mTrackListView = (ListView) (getLayoutInflater().inflate(R.layout.track_list, null));
+	}
+	
+	private void goToArtistsListView() {
+		mMainLayout.removeView(mAlbumListView);
+		mMainLayout.addView(mViewPager);
+		mActionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
+		mCurrentMainView = ARTISTS_VIEW;
+	}
+	
+	private void goToAlbumsListView() {
+		mMainLayout.removeView(mTrackListView);
+		mMainLayout.addView(mAlbumListView);
+		mCurrentMainView = ALBUMS_VIEW;
+	}
+	
+	public class ArtistClickedListener implements AdapterView.OnItemClickListener {
+
+		@Override
+		public void onItemClick(AdapterView<?> arg0, View view, int arg2,
+				long arg3) {
+			mMainLayout.removeView(mViewPager);
+			mMainLayout.addView(mAlbumListView);
+			mActionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
+			mCurrentMainView = ALBUMS_VIEW;
+			
+			TextView textView = (TextView)view;
+			mCurrentArtist = textView.getText().toString();
+			ArrayAdapter<String> adapter = new ArrayAdapter<String>(getApplicationContext(),
+					R.layout.simple_list_item_1_black, 
+					MusicLibraryDBAdapter.instance.listAlbum(mCurrentArtist));
+			mAlbumListView.setAdapter(adapter);
+			mAlbumListView.setOnItemClickListener(new AlbumClickedListener());
+		}	
+	}
+	
+	public class AlbumClickedListener implements AdapterView.OnItemClickListener {
+		@Override
+		public void onItemClick(AdapterView<?> parent, View view, int arg2,
+				long arg3) {
+			mMainLayout.removeView(mAlbumListView);
+			mMainLayout.addView(mTrackListView);
+			mCurrentMainView = TRACKS_VIEW;
+			
+			TextView textView = (TextView)view;
+			mCurrentAlbum = textView.getText().toString();
+			mSelectedAlbum = MusicLibraryDBAdapter.instance.listAlbumTracks(mCurrentArtist, mCurrentAlbum);
+			ArrayAdapter<Track> adapter = new ArrayAdapter<Track>(getApplicationContext(),
+					R.layout.simple_list_item_1_black, 
+					mSelectedAlbum);
+			mTrackListView.setAdapter(adapter);
+			mTrackListView.setOnItemClickListener(new TrackClickedListener());
+		}
+	}
+	
+	private class TrackClickedListener implements AdapterView.OnItemClickListener {
+
+		@Override
+		public void onItemClick(AdapterView<?> parent, View view, int position,
+				long arg3) {
+			mMusicPlayer.addToList(mSelectedAlbum, position);
+		}
 	}
 	
 	private void setTab() {
@@ -176,6 +279,23 @@ public class MusicTest extends FragmentActivity implements TabListener {
 		if (mDropbox.isLogin()) {
 			//dropBoxRoot();
 		}
+	}
+	
+	@Override
+	public boolean onKeyDown(int keyCode, KeyEvent event) {
+		if(keyCode==KeyEvent.KEYCODE_BACK){
+			if(mSlidingUpPanelLayout.isExpanded()) {
+				mSlidingUpPanelLayout.collapsePane();
+				return true;
+			} else if(mCurrentMainView == ALBUMS_VIEW) {
+				goToArtistsListView();
+				return true;
+			} else if(mCurrentMainView == TRACKS_VIEW) {
+				goToAlbumsListView();
+				return true;
+			}
+		}
+		return super.onKeyDown(keyCode, event);
 	}
 	
 	public void setAlbumArt(Bitmap bitmap) {		
@@ -217,6 +337,7 @@ public class MusicTest extends FragmentActivity implements TabListener {
     
     public static class AppSectionsPagerAdapter extends FragmentPagerAdapter {
 
+    	private static String[] mPageTitles = {"Artists", "Buttons"};
         public AppSectionsPagerAdapter(FragmentManager fm) {
             super(fm);
         }
@@ -238,7 +359,7 @@ public class MusicTest extends FragmentActivity implements TabListener {
 
         @Override
         public CharSequence getPageTitle(int position) {
-            return "Section " + (position + 1);
+            return mPageTitles[position];
         }
     }
 
