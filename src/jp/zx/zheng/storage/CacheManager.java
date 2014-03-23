@@ -35,6 +35,7 @@ public class CacheManager {
 		try {
 			return new FileInputStream(file);
 		} catch (FileNotFoundException e) {
+			track.isCached = false;
 			e.printStackTrace();
 			return null;
 		}

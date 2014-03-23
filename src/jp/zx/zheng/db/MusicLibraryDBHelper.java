@@ -3,6 +3,7 @@ package jp.zx.zheng.db;
 import java.util.ArrayList;
 import java.util.List;
 
+import jp.zx.zheng.cloudmusic.Playlist;
 import jp.zx.zheng.cloudmusic.Track;
 import android.content.ContentValues;
 import android.content.Context;
@@ -64,7 +65,7 @@ public class MusicLibraryDBHelper extends SQLiteOpenHelper {
 		
 		db.execSQL(
 				"CREATE TABLE " + TABLE_PLAYLISTS_NAME + " ("
-						+ COL_ID + " INTEGER PRIMARY KEY,"
+						+ COL_ID + " INTEGER,"
 						+ COL_TRACK_ID + " INTEGER"
 						+ ");");
 		
@@ -102,6 +103,20 @@ public class MusicLibraryDBHelper extends SQLiteOpenHelper {
 		values.put(COL_LOCATION, location);
 		//Log.d(TAG, "insert track " + id);
 		return db.insert(TABLE_TRACKS_NAME, "null", values);
+	}
+	
+	public long insertTrackToPlaylist(SQLiteDatabase db, int playlistId, int trackId) {
+		ContentValues values = new ContentValues();
+		values.put(COL_ID, playlistId);
+		values.put(COL_TRACK_ID, trackId);
+		return db.insert(TABLE_PLAYLISTS_NAME, "null", values);
+	}
+	
+	public long insertPlaylistName(SQLiteDatabase db, int playlistId, String name) {
+		ContentValues values = new ContentValues();
+		values.put(COL_ID, playlistId);
+		values.put(COL_PLAYLIST_NAME, name);
+		return db.insert(TABLE_PLAYLIST_NAMES_NAME, "null", values);
 	}
 	
 	public List<Track> selectTracks(SQLiteDatabase db) {
@@ -164,8 +179,43 @@ public class MusicLibraryDBHelper extends SQLiteOpenHelper {
 		}
 		return trackList;
 	}
+	
+	public List<Playlist> listPlaylist(SQLiteDatabase db) {
+		List<Playlist> playlists = new ArrayList<Playlist>();
+		String[] columns = {COL_ID, COL_PLAYLIST_NAME};
+		Cursor cursor = db.query(true, TABLE_PLAYLIST_NAMES_NAME, columns, 
+				null, null, null, null, COL_ID, null);
+		while(cursor.moveToNext()) {
+			int id = cursor.getInt(cursor.getColumnIndex(COL_ID));
+			String name = cursor.getString(cursor.getColumnIndex(COL_PLAYLIST_NAME));
+			playlists.add(new Playlist(id, name));
+			//Log.d(TAG, "artist:" + albumArtist);
+		}
+		return playlists;
+	}
+	
+	public List<Track> listPlaylistTracks(SQLiteDatabase db, int playlistId) {
+		List<Track> trackList = new ArrayList<Track>();
+		String sql = "SELECT * FROM " + TABLE_PLAYLISTS_NAME + " join "
+				+ TABLE_TRACKS_NAME + " on " + TABLE_PLAYLISTS_NAME + "." + COL_TRACK_ID
+				+ " = " + TABLE_TRACKS_NAME + "." + COL_ID + " where " + TABLE_PLAYLISTS_NAME
+				+ "." + COL_ID + " = ?;"; 
+		Log.d(TAG, sql);
+		Cursor cursor = db.rawQuery(sql, new String[]{Integer.toString(playlistId)});
+		while(cursor.moveToNext()) {
+			String name = cursor.getString(cursor.getColumnIndex(COL_NAME));
+			String artist = cursor.getString(cursor.getColumnIndex(COL_ARTIST));
+			String albumArtist = cursor.getString(cursor.getColumnIndex(COL_ALBUM_ARTIST));
+			String album = cursor.getString(cursor.getColumnIndex(COL_ALBUM));
+			String location = cursor.getString(cursor.getColumnIndex(COL_LOCATION));
+			trackList.add(new Track(name, artist, albumArtist, album, location));
+		}
+		return trackList;
+	}
 
 	public void truncate(SQLiteDatabase db) {
 		db.delete(TABLE_TRACKS_NAME, null, null);
+		db.delete(TABLE_PLAYLIST_NAMES_NAME, null, null);
+		db.delete(TABLE_PLAYLISTS_NAME, null, null);
 	}
 }

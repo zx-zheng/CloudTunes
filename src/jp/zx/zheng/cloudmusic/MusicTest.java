@@ -28,10 +28,12 @@ import android.app.ActionBar.Tab;
 import android.app.ActionBar.TabListener;
 import android.app.Activity;
 import android.app.FragmentTransaction;
+import android.content.Context;
 import android.content.Intent;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.Point;
+import android.graphics.Typeface;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
@@ -40,11 +42,13 @@ import android.support.v4.view.ViewPager;
 import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -67,13 +71,16 @@ public class MusicTest extends FragmentActivity implements TabListener {
 	Dropbox mDropbox;
 	MediaPlayer mp;
 	ToggleButton playButton;
-	MusicPlayer mMusicPlayer;
-	private ActionBar mActionBar;
+	ToggleButton mPlayButton1;
+	static MusicPlayer mMusicPlayer;
+	private static ActionBar mActionBar;
 	private AppSectionsPagerAdapter mAppSectionsPagerAdapter;
-	private ViewPager mViewPager;
-	private ListView mAlbumListView;
-	private ListView mTrackListView;
-	private ImageView mAlbumArtView;
+	private static Typeface mEntypo;
+	private static ViewPager mViewPager;
+	private static ListView mAlbumListView;
+	private static ListView mTrackListView;
+	private static ListView mPlayListView;
+	private static ImageView mAlbumArtView;
 	private String mCurrentArtist;
 	private String mCurrentAlbum;
 	private SeekBar mSeekBar;
@@ -82,11 +89,13 @@ public class MusicTest extends FragmentActivity implements TabListener {
 	private View mDragView;
 	private static ArtistListFragment mArtistListFragment;
 	private static ButtonsFragment mButtonsFragment;
-	private int mCurrentMainView = 0;
-	public List<Track> mSelectedAlbum;
+	private static int mCurrentMainView = 0;
+	public static List<Track> mSelectedTrackList;
+	public static List<Playlist> mPlaylists;
 	private static final int ARTISTS_VIEW = 0;
 	private static final int ALBUMS_VIEW = 1;
 	private static final int TRACKS_VIEW = 2;
+	private static final int PLAYLIST_TRACKS_VIEW = 3;
 	
 	@Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -95,6 +104,9 @@ public class MusicTest extends FragmentActivity implements TabListener {
         
         //init DB adapter
         MusicLibraryDBAdapter.init(getApplicationContext());
+        
+        //init font
+        mEntypo = Typeface.createFromAsset(getAssets(), "Entypo.ttf");
         
         mMainLayout = (LinearLayout) findViewById(R.id.mainLayout);
         mSlidingUpPanelLayout = (SlidingUpPanelLayout) findViewById(R.id.sliding_layout);
@@ -164,16 +176,17 @@ public class MusicTest extends FragmentActivity implements TabListener {
         		(TextView)findViewById(R.id.artistLabel));
         mSeekBar = (SeekBar)findViewById(R.id.musicSeekBar);
         mMusicPlayer.initSeekBar(mSeekBar);
-        Ybox.getInstance().init(this);
+        //Ybox.getInstance().init(this);
         mDropbox = new Dropbox(getApplicationContext());
         //Ybox.getInstance().setSid(this);
         
         playButton = (ToggleButton)findViewById(R.id.playButtun);
-        playButton.setChecked(!mMusicPlayer.isPlayingMusic());
         playButton.setMovementMethod(LinkMovementMethod.getInstance());
-        mMusicPlayer.setPlayButton(playButton);
-        playButton.setOnClickListener(new OnClickListener() {
-			
+        playButton.setTypeface(mEntypo);
+        playButton.setTextOn("\u25B6");
+        playButton.setTextOff("\u2016");
+        playButton.setChecked(!mMusicPlayer.isPlayingMusic());
+        playButton.setOnClickListener(new OnClickListener() {			
 			@Override
 			public void onClick(View v) {
 				if(playButton.isChecked()) {
@@ -188,10 +201,52 @@ public class MusicTest extends FragmentActivity implements TabListener {
         
         mAlbumListView = (ListView) (getLayoutInflater().inflate(R.layout.album_list, null));
         mTrackListView = (ListView) (getLayoutInflater().inflate(R.layout.track_list, null));
+        
+        mPlayButton1 = (ToggleButton) findViewById(R.id.playButton1);
+        mPlayButton1.setTypeface(mEntypo);
+        mPlayButton1.setTextOn("\u25B6");
+        mPlayButton1.setTextOff("\u2016");
+        mPlayButton1.setChecked(!mMusicPlayer.isPlayingMusic());
+        mPlayButton1.setOnClickListener(new OnClickListener() {			
+			@Override
+			public void onClick(View v) {
+				if(mPlayButton1.isChecked()) {
+					Log.d(TAG, "pause");
+					mMusicPlayer.pause();
+				} else {
+					Log.d(TAG, "start");
+					mMusicPlayer.start();
+				}
+			}
+        });
+                
+        mMusicPlayer.setPlayButton(new ToggleButton[]{playButton, mPlayButton1});
+        
+        Button prevButton = (Button) findViewById(R.id.prevButton);
+        prevButton.setTypeface(mEntypo);
+        prevButton.setText("\u23EA");
+        prevButton.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				mMusicPlayer.playPrevTrack();				
+			}
+		});
+        
+        Button nextButton = (Button) findViewById(R.id.nextButton);
+        nextButton.setTypeface(mEntypo);
+        nextButton.setText("\u23E9");
+        nextButton.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				mMusicPlayer.playNextTrack();				
+			}
+		});
+        
 	}
 	
-	private void goToArtistsListView() {
+	private void goToMainView() {
 		mMainLayout.removeView(mAlbumListView);
+		mMainLayout.removeView(mTrackListView);
 		mMainLayout.addView(mViewPager);
 		mActionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
 		mCurrentMainView = ARTISTS_VIEW;
@@ -233,21 +288,21 @@ public class MusicTest extends FragmentActivity implements TabListener {
 			
 			TextView textView = (TextView)view;
 			mCurrentAlbum = textView.getText().toString();
-			mSelectedAlbum = MusicLibraryDBAdapter.instance.listAlbumTracks(mCurrentArtist, mCurrentAlbum);
+			mSelectedTrackList = MusicLibraryDBAdapter.instance.listAlbumTracks(mCurrentArtist, mCurrentAlbum);
 			ArrayAdapter<Track> adapter = new ArrayAdapter<Track>(getApplicationContext(),
 					R.layout.simple_list_item_1_black, 
-					mSelectedAlbum);
+					mSelectedTrackList);
 			mTrackListView.setAdapter(adapter);
 			mTrackListView.setOnItemClickListener(new TrackClickedListener());
 		}
 	}
 	
-	private class TrackClickedListener implements AdapterView.OnItemClickListener {
+	private static class TrackClickedListener implements AdapterView.OnItemClickListener {
 
 		@Override
 		public void onItemClick(AdapterView<?> parent, View view, int position,
 				long arg3) {
-			mMusicPlayer.addToList(mSelectedAlbum, position);
+			mMusicPlayer.addToListAndPlay(mSelectedTrackList, position);
 		}
 	}
 	
@@ -288,10 +343,13 @@ public class MusicTest extends FragmentActivity implements TabListener {
 				mSlidingUpPanelLayout.collapsePane();
 				return true;
 			} else if(mCurrentMainView == ALBUMS_VIEW) {
-				goToArtistsListView();
+				goToMainView();
 				return true;
 			} else if(mCurrentMainView == TRACKS_VIEW) {
 				goToAlbumsListView();
+				return true;
+			} else if(mCurrentMainView == PLAYLIST_TRACKS_VIEW) {
+				goToMainView();
 				return true;
 			}
 		}
@@ -337,7 +395,7 @@ public class MusicTest extends FragmentActivity implements TabListener {
     
     public static class AppSectionsPagerAdapter extends FragmentPagerAdapter {
 
-    	private static String[] mPageTitles = {"Artists", "Buttons"};
+    	private static String[] mPageTitles = {"Artists", "Playlists", "Buttons"};
         public AppSectionsPagerAdapter(FragmentManager fm) {
             super(fm);
         }
@@ -347,6 +405,8 @@ public class MusicTest extends FragmentActivity implements TabListener {
             switch (i) {
                 case 0:
                     return mArtistListFragment;
+                case 1:
+                	return new PlayListFragment();
                 default:
                 	return mButtonsFragment;
             }
@@ -354,7 +414,7 @@ public class MusicTest extends FragmentActivity implements TabListener {
 
         @Override
         public int getCount() {
-            return 2;
+            return 3;
         }
 
         @Override
@@ -378,5 +438,39 @@ public class MusicTest extends FragmentActivity implements TabListener {
 	public void onTabUnselected(Tab tab, FragmentTransaction ft) {
 		// TODO Auto-generated method stub
 		
+	}
+	
+	public static class PlayListFragment extends Fragment {
+		
+		@Override
+	    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+	            Bundle savedInstanceState) {
+			View rootView = inflater.inflate(R.layout.playlist_list, container, false);
+			mPlayListView = (ListView) rootView.findViewById(R.id.playListView);
+			mPlaylists = MusicLibraryDBAdapter.instance.listPlaylist();
+			ArrayAdapter<Playlist> adapter = new ArrayAdapter<Playlist>(getActivity(), 
+					R.layout.simple_list_item_1_black,
+					mPlaylists);
+			mPlayListView.setAdapter(adapter);
+			mPlayListView.setOnItemClickListener(new PlaylistClickedListener());
+			return rootView;
+		}
+	}
+	
+	private static class PlaylistClickedListener implements AdapterView.OnItemClickListener {
+		@Override
+		public void onItemClick(AdapterView<?> parent, View view, int pos,
+				long arg3) {
+			mMainLayout.removeView(mViewPager);
+			mActionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
+			mMainLayout.addView(mTrackListView);
+			mCurrentMainView = PLAYLIST_TRACKS_VIEW;
+			mSelectedTrackList = MusicLibraryDBAdapter.instance.listPlaylistTracks(mPlaylists.get(pos).id);
+			ArrayAdapter<Track> adapter = new ArrayAdapter<Track>(parent.getContext(),
+					R.layout.simple_list_item_1_black, 
+					mSelectedTrackList);
+			mTrackListView.setAdapter(adapter);
+			mTrackListView.setOnItemClickListener(new TrackClickedListener());
+		}
 	}
 }

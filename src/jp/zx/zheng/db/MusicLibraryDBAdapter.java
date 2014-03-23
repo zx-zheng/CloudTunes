@@ -3,6 +3,7 @@ package jp.zx.zheng.db;
 import java.util.List;
 
 import jp.zx.zheng.cloudmusic.MusicLibraryParser;
+import jp.zx.zheng.cloudmusic.Playlist;
 import jp.zx.zheng.cloudmusic.Track;
 import android.content.ContentValues;
 import android.content.Context;
@@ -19,6 +20,7 @@ public class MusicLibraryDBAdapter {
 	
 	public static void init(Context context) {
 		instance = new MusicLibraryDBAdapter(context);
+		instance.open();
 	}
 	
 	private MusicLibraryDBAdapter(Context context) {
@@ -41,6 +43,14 @@ public class MusicLibraryDBAdapter {
 				discCount, trackNumber, trackCount, playCount, year, location);
 	}
 	
+	public long insertTrackToPlaylist(int playlistId, int trackId) {
+		return mHelper.insertTrackToPlaylist(mDb, playlistId, trackId);
+	}
+	
+	public long insertPlaylistName(int playlistId, String name) {
+		return mHelper.insertPlaylistName(mDb, playlistId, name);
+	}
+	
 	public void selectTracks() {
 		mHelper.selectTracks(mDb);
 	}
@@ -55,6 +65,14 @@ public class MusicLibraryDBAdapter {
 	
 	public List<Track> listAlbumTracks(String albumArtist, String album) {
 		return mHelper.listAlbumTracks(mDb, albumArtist, album);
+	}
+	
+	public List<Playlist> listPlaylist() {
+		return mHelper.listPlaylist(mDb);
+	}
+	
+	public List<Track> listPlaylistTracks(int playlistId) {
+		return mHelper.listPlaylistTracks(mDb, playlistId);
 	}
 	
 	public void truncate() {

@@ -73,21 +73,17 @@ public class Dropbox {
 			dbxFs.getSyncStatus();
 			DbxPath dbxPath = CacheManager.pathTodbxPath(track.getLocation());
 			if(dbxFs.exists(dbxPath)){
+				track.isUploaded = true;
 				Log.d(TAG, "open: " + dbxPath.toString());
 				DbxFile file = dbxFs.open(dbxPath);
 				CacheManager.saveCache(file.getReadStream(), track);
+				track.isCached = true;
 				file.close();
 				return CacheManager.getCacheFile(track);
 			} else {
+				track.isUploaded = false;
 				Log.w(TAG, dbxPath.toString() + " not found");
 			}
-			/*
-			if(dbxFs.exists(new DbxPath("/itunes/itunes media/music/the idolm@ster/THE IDOLM@STER 765PRO ALLSTARS+ GRE@TEST BEST! -THE IDOLM@STER HISTORY-/15 MUSIC♪ (M@STER VERSION).m4a"))){
-				Log.d(TAG, "exist");
-			} else {
-				Log.d(TAG, "not exist");
-			}
-			*/
 
     	} catch (IOException e) {
 			e.printStackTrace();

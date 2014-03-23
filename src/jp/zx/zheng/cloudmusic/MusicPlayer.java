@@ -38,7 +38,7 @@ public class MusicPlayer {
 	private static MusicPlayer mMusicPlayer;
 	private SeekBar mSeekbar;
 	private ImageView mAlbumArtView;
-	private ToggleButton mPlayButton;
+	private ToggleButton[] mPlayButtons;
 	private TextView mTrackNameLabel;
 	private TextView mArtistNameLabel;
 	
@@ -147,17 +147,14 @@ public class MusicPlayer {
 		mArtistNameLabel = artistNameLabel;
 	}
 	
-	public void setPlayButton(ToggleButton button) {
-		mPlayButton = button;
+	public void setPlayButton(ToggleButton[] buttons) {
+		mPlayButtons = buttons;
 	}
 
 	public void playMusic(Track track) {
 		FileInputStream file;
 		if (!CacheManager.isCached(track)){
-			//mDownloader.execute(track);
 			return;
-			//file = mDropbox.downloadFileAndCache(dbxPath);
-			//Log.d("Main", "file cached");
 		} else {
 			file = CacheManager.getCacheFile(track);
 			Log.d("Main", "read cache");
@@ -184,11 +181,36 @@ public class MusicPlayer {
 		if(mPlayList.size() == 0) {
 			return;
 		}
-		if(currentPos == mPlayList.size() - 1) {
-			currentPos = 0;
-		} else {
-			currentPos++;
+		do {
+			Log.d(TAG, "next track");
+			if(currentPos == mPlayList.size() - 1) {
+				currentPos = 0;
+			} else {
+				currentPos++;
+			}
+		} while(!(mPlayList.get(currentPos).isUploaded || mPlayList.get(currentPos).isCached()));
+		
+		if(mReadyQueue.contains(mPlayList.get(currentPos))) {
+			playMusic(mPlayList.get(currentPos));
 		}
+	}
+	
+	public void playPrevTrack() {
+		isInPlayingState = false;
+		isPlayingMusic = false;
+		setPlayButtonStatus();
+		if(mPlayList.size() == 0) {
+			return;
+		}
+		do {
+			Log.d(TAG, "previous track");
+			if(currentPos == 0) {
+				currentPos = mPlayList.size() - 1;
+			} else {
+				currentPos--;
+			}
+		} while(!(mPlayList.get(currentPos).isUploaded || mPlayList.get(currentPos).isCached()));
+		
 		if(mReadyQueue.contains(mPlayList.get(currentPos))) {
 			playMusic(mPlayList.get(currentPos));
 		}
@@ -208,7 +230,9 @@ public class MusicPlayer {
 	}
 	
 	private void setPlayButtonStatus() {
-		mPlayButton.setChecked(!isPlayingMusic);
+		for(ToggleButton button: mPlayButtons){
+			button.setChecked(!isPlayingMusic);
+		}
 	}
 	
 	public boolean isPlayingMusic() {
@@ -236,10 +260,13 @@ public class MusicPlayer {
 		mPlayList.add(track);
 	}
 	
-	public void addToList(List<Track> trackList, int startPos) {
+	public void addToListAndPlay(List<Track> trackList, int startPos) {
 		mPlayList.clear();
+		mReadyQueue.clear();
+		isInPlayingState = false;
 		mPlayList.addAll(trackList);
 		currentPos = startPos;
+		//download file in background
 		preparePlayList();
 		playMusic(mPlayList.get(currentPos));
 	}
@@ -262,6 +289,10 @@ public class MusicPlayer {
 	public void addToReadyQueue(Track track) {
 		mReadyQueue.offer(track);
 		if (mReadyQueue.contains(mPlayList.get(currentPos)) && !isInPlayingState) {
+			if(!track.isUploaded) {
+				playNextTrack();
+				return;
+			}
 			playMusic(mPlayList.get(currentPos));
 		}
 	}

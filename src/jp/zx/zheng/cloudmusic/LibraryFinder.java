@@ -82,7 +82,7 @@ public class LibraryFinder extends Activity {
 		@Override
 		public void onItemClick(AdapterView<?> parent, View view, int position,
 				long arg3) {
-			mMusicPlayer.addToList(mTempAlbum, position);
+			mMusicPlayer.addToListAndPlay(mTempAlbum, position);
 		}
 	}
 }

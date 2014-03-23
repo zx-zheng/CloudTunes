@@ -1,5 +1,7 @@
 package jp.zx.zheng.cloudmusic;
 
+import jp.zx.zheng.storage.CacheManager;
+
 public class Track {
 	
 	private String mName;
@@ -7,6 +9,8 @@ public class Track {
 	private String mAlbumArtist;
 	private String mAlbum;
 	private String mLocation;
+	public boolean isUploaded = false;
+	public boolean isCached = false;
 	
 	public Track(String name, String artist, String albumArtist,
 			String album, String location) {
@@ -41,6 +45,10 @@ public class Track {
 	@Override
 	public String toString() {
 		return mName;
+	}
+	
+	public boolean isCached() {
+		return CacheManager.isCached(this);
 	}
 	
 }

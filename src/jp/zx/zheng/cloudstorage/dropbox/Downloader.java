@@ -42,7 +42,8 @@ public class Downloader extends AsyncTask<Track, Track, List<Track>> {
 	}
 	
 	@Override  
-    protected void onProgressUpdate(Track... tracks) {  
+    protected void onProgressUpdate(Track... tracks) {
+		Log.d(TAG, tracks[0].getName() + " ready");
 		mMusicPlayer.addToReadyQueue(tracks[0]);
 	}
 	

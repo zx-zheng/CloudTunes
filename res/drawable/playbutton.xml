@@ -2,8 +2,10 @@
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- pressed -->
     <item android:state_checked="false"
-          android:drawable="@android:drawable/ic_media_pause" />
+          android:drawable="@android:drawable/ic_media_pause" 
+          android:text="\u2016"/>
     <!-- released -->
     <item android:state_checked="true"
-          android:drawable="@android:drawable/ic_media_play" />
+          android:drawable="@android:drawable/ic_media_play"
+          android:text="\u25B6" />
 </selector>

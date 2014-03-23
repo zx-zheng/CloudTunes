@@ -38,6 +38,12 @@ public class MusicLibraryParser {
 	private static final String XML_NAME_LOCATION = "Location";
 	private static final String XML_NAME_MOVIE = "Movie";
 	private static final String XML_NAME_MUSIC_VIDEO = "Music Video";
+	private static final String XML_NAME_PLAYLIST_ID = "Playlist ID";
+	private static final String XML_NAME_TRACK_ID = "Track ID";
+	private static final String XML_NAME_PLAYLIST_ITEMS = "Playlist Items";
+	private static final String XML_NAME_VISIBLE = "Visible";
+	private static final String XML_NAME_MUSIC = "Music";
+	private static final String XML_NAME_MOVIES = "Movies";
 		
 	XmlPullParser mXpp;
 	MusicLibraryDBAdapter mDbadapter;
@@ -195,21 +201,68 @@ public class MusicLibraryParser {
 	}
 	
 	private void parsePlaylist() throws XmlPullParserException, IOException {
-		//start from <key>
-		mXpp.nextTag();
-		Log.d(TAG, mXpp.getName());
-		mXpp.nextText();
-		//<string>
-		mXpp.nextTag();
-		Log.i(TAG, mXpp.nextText());
-		int eventType = mXpp.next();
-		while (true) {
-			eventType = mXpp.next();
-			if(eventType == XmlPullParser.END_TAG && mXpp.getName().equals(XML_TAG_ARRAY)) {
+		String name = null;
+		int playlistID = 0;
+		boolean visible = true;
+		int eventType;
+		while(true) {
+			//start from <key>
+			eventType = mXpp.nextTag();
+			if(eventType == XmlPullParser.END_TAG && mXpp.getName().equals(XML_TAG_DICT)) {
 				break;
 			}
+			String tagText = mXpp.nextText();
+			mXpp.nextTag();
+			if(tagText.equals(XML_NAME_NAME)) {
+				name = mXpp.nextText();
+				Log.d(TAG, name);
+			} else if(tagText.equals(XML_NAME_PLAYLIST_ID)) {
+				playlistID = Integer.parseInt(mXpp.nextText());
+				Log.d(TAG, Integer.toString(playlistID));
+			} else if(tagText.equals(XML_NAME_VISIBLE)) {
+				visible = Boolean.parseBoolean(mXpp.getName());
+				mXpp.nextText();
+			} else if(tagText.equals(XML_NAME_MUSIC)) {
+				visible = !Boolean.parseBoolean(mXpp.getName());
+				mXpp.nextText();
+			} else if(tagText.equals(XML_NAME_MOVIES)) {
+				visible = !Boolean.parseBoolean(mXpp.getName());
+				mXpp.nextText();
+			} else if(tagText.equals(XML_NAME_PLAYLIST_ITEMS)) {
+				parsePlaylistTracks(playlistID, visible);
+			} else {
+				mXpp.nextText();
+			}
 		}
-		//</dict>
-		mXpp.nextTag();
+		mDbadapter.insertPlaylistName(playlistID, name);
+	}
+	
+	private void parsePlaylistTracks(int playlistID, boolean visble) throws XmlPullParserException, IOException {
+		int eventType;
+		if(visble) {
+			while(true) {
+				int trackID = 0;
+				eventType = mXpp.nextTag();
+				if(eventType == XmlPullParser.END_TAG && mXpp.getName().equals(XML_TAG_ARRAY)) {
+					break;
+				}
+				mXpp.nextTag();
+				mXpp.next();
+				mXpp.nextTag();
+				mXpp.nextTag();
+				trackID = Integer.parseInt(mXpp.nextText());
+				//Log.d(TAG, Integer.toString(trackID));
+				mDbadapter.insertTrackToPlaylist(playlistID, trackID);
+				mXpp.nextTag();
+			}
+		} else {
+			Log.d(TAG, "invisible playlist");
+			while(true) {
+				eventType = mXpp.next();
+				if(eventType == XmlPullParser.END_TAG && mXpp.getName().equals(XML_TAG_ARRAY)) {
+					break;
+				}
+			}
+		}
 	}
 }
