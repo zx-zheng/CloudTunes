@@ -8,6 +8,7 @@ import java.util.zip.Inflater;
 
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.Volley;
+import com.astuetz.PagerSlidingTabStrip;
 import com.dropbox.sync.android.DbxPath;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout.PanelSlideListener;
@@ -53,6 +54,7 @@ import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -63,7 +65,7 @@ import android.widget.Toast;
 import android.widget.ToggleButton;
 import android.view.View.OnClickListener;
 
-public class MusicTest extends FragmentActivity implements TabListener {
+public class MusicTest extends FragmentActivity {
 
 	private static final String TAG = MusicTest.class.getName();
 	
@@ -74,13 +76,16 @@ public class MusicTest extends FragmentActivity implements TabListener {
 	ToggleButton mPlayButton1;
 	static MusicPlayer mMusicPlayer;
 	private static ActionBar mActionBar;
+	private static PagerSlidingTabStrip mTabs;
 	private AppSectionsPagerAdapter mAppSectionsPagerAdapter;
 	private static Typeface mEntypo;
+	private static LinearLayout mLibraryView;
 	private static ViewPager mViewPager;
 	private static ListView mAlbumListView;
 	private static ListView mTrackListView;
 	private static ListView mPlayListView;
-	private static ImageView mAlbumArtView;
+	private static ImageView mAlbumArtImage;
+	private static ImageView mSmallAlbumArtImage;
 	private String mCurrentArtist;
 	private String mCurrentAlbum;
 	private SeekBar mSeekBar;
@@ -109,8 +114,29 @@ public class MusicTest extends FragmentActivity implements TabListener {
         mEntypo = Typeface.createFromAsset(getAssets(), "Entypo.ttf");
         
         mMainLayout = (LinearLayout) findViewById(R.id.mainLayout);
+        mLibraryView = (LinearLayout) findViewById(R.id.library);
+        mTabs = (PagerSlidingTabStrip) findViewById(R.id.tabs);
         mSlidingUpPanelLayout = (SlidingUpPanelLayout) findViewById(R.id.sliding_layout);
         mSlidingUpPanelLayout.setShadowDrawable(getResources().getDrawable(R.drawable.above_shadow));
+        mSlidingUpPanelLayout.setPanelSlideListener(new PanelSlideListener() {
+			
+			@Override
+			public void onPanelSlide(View panel, float slideOffset) {
+				
+			}
+			
+			@Override
+			public void onPanelExpanded(View panel) {
+			}
+			
+			@Override
+			public void onPanelCollapsed(View panel) {
+			}
+			
+			@Override
+			public void onPanelAnchored(View panel) {
+			}
+		});
        
         //mDragView = findViewById(R.id.dragView);
         mArtistListFragment = new ArtistListFragment();
@@ -128,19 +154,12 @@ public class MusicTest extends FragmentActivity implements TabListener {
         mActionBar.setHomeButtonEnabled(false);
 
         // Specify that we will be displaying tabs in the action bar.
-        mActionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
+        //mActionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
         
         mViewPager = (ViewPager) findViewById(R.id.pager);
         mViewPager.setAdapter(mAppSectionsPagerAdapter);
-        mViewPager.setOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
-            @Override
-            public void onPageSelected(int position) {
-                // When swiping between different app sections, select the corresponding tab.
-                // We can also use ActionBar.Tab#select() to do this if we have a reference to the
-                // Tab.
-                mActionBar.setSelectedNavigationItem(position);
-            }
-        });
+        mTabs.setViewPager(mViewPager);
+        
         mViewPager.setOnTouchListener(new OnTouchListener() {
 			
 			@Override
@@ -154,21 +173,28 @@ public class MusicTest extends FragmentActivity implements TabListener {
 			}
 		});
         
-        setTab();
-        
         Point windowSize = new Point();
         getWindowManager().getDefaultDisplay().getSize(windowSize);
+        FrameLayout albumArtView = (FrameLayout) findViewById(R.id.AlbumArtView);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(windowSize.x, windowSize.x);
-        mAlbumArtView = (ImageView)findViewById(R.id.albumArt);
-        mAlbumArtView.setLayoutParams(params);
-        mAlbumArtView.setOnTouchListener(new OnTouchListener() {
-			
+        albumArtView.setLayoutParams(params);
+        mAlbumArtImage = (ImageView)findViewById(R.id.albumArtImage);
+        //mAlbumArtImage.setLayoutParams(params);
+        mAlbumArtImage.setOnTouchListener(new OnTouchListener() {			
 			@Override
 			public boolean onTouch(View v, MotionEvent event) {
 				return true;
 			}
 		});
-        mMusicPlayer.initAlbumArtView(mAlbumArtView);
+        TextView albumArtText = (TextView) findViewById(R.id.albumArtText);
+        albumArtText.setTypeface(mEntypo);
+        mSmallAlbumArtImage = (ImageView)findViewById(R.id.smallAlbumArtImage);
+        TextView smallAlbumArtText = (TextView) findViewById(R.id.smallalbumArtText);
+        smallAlbumArtText.setTypeface(mEntypo);
+        mMusicPlayer.initAlbumArtView(
+        		new ImageView[]{mAlbumArtImage, (ImageView)findViewById(R.id.smallAlbumArtImage)});
+        mMusicPlayer.initAlbumArtText(
+        		new TextView[]{albumArtText,smallAlbumArtText});        				
         mMusicPlayer.setAlbumArt();
         
         mMusicPlayer.initLabels(
@@ -183,8 +209,8 @@ public class MusicTest extends FragmentActivity implements TabListener {
         playButton = (ToggleButton)findViewById(R.id.playButtun);
         playButton.setMovementMethod(LinkMovementMethod.getInstance());
         playButton.setTypeface(mEntypo);
-        playButton.setTextOn("\u25B6");
-        playButton.setTextOff("\u2016");
+        //playButton.setTextOn("\u25B6");
+        //playButton.setTextOff("\u2016");
         playButton.setChecked(!mMusicPlayer.isPlayingMusic());
         playButton.setOnClickListener(new OnClickListener() {			
 			@Override
@@ -224,7 +250,7 @@ public class MusicTest extends FragmentActivity implements TabListener {
         
         Button prevButton = (Button) findViewById(R.id.prevButton);
         prevButton.setTypeface(mEntypo);
-        prevButton.setText("\u23EA");
+        //prevButton.setText("\u23EA");
         prevButton.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
@@ -234,7 +260,7 @@ public class MusicTest extends FragmentActivity implements TabListener {
         
         Button nextButton = (Button) findViewById(R.id.nextButton);
         nextButton.setTypeface(mEntypo);
-        nextButton.setText("\u23E9");
+        //nextButton.setText("\u23E9");
         nextButton.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
@@ -247,8 +273,7 @@ public class MusicTest extends FragmentActivity implements TabListener {
 	private void goToMainView() {
 		mMainLayout.removeView(mAlbumListView);
 		mMainLayout.removeView(mTrackListView);
-		mMainLayout.addView(mViewPager);
-		mActionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
+		mMainLayout.addView(mLibraryView);
 		mCurrentMainView = ARTISTS_VIEW;
 	}
 	
@@ -263,9 +288,8 @@ public class MusicTest extends FragmentActivity implements TabListener {
 		@Override
 		public void onItemClick(AdapterView<?> arg0, View view, int arg2,
 				long arg3) {
-			mMainLayout.removeView(mViewPager);
+			mMainLayout.removeView(mLibraryView);
 			mMainLayout.addView(mAlbumListView);
-			mActionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
 			mCurrentMainView = ALBUMS_VIEW;
 			
 			TextView textView = (TextView)view;
@@ -306,28 +330,6 @@ public class MusicTest extends FragmentActivity implements TabListener {
 		}
 	}
 	
-	private void setTab() {
-		// For each of the sections in the app, add a tab to the action bar.
-        for (int i = 0; i < mAppSectionsPagerAdapter.getCount(); i++) {
-            mActionBar.addTab(
-                    mActionBar.newTab()
-                            .setText(mAppSectionsPagerAdapter.getPageTitle(i))
-                            .setTabListener(this));
-        }
-	}
-	
-	void showChild(View v, StringBuilder sbTabs) {
-		System.out.printf("%s%s\n", sbTabs, v.getClass().getSimpleName());
-		if (v instanceof ViewGroup) {
-			ViewGroup layout = (ViewGroup) v;
-			sbTabs = sbTabs.append("\t");
-			for (int i = 0; i < layout.getChildCount(); i++) {
-				showChild(layout.getChildAt(i), new StringBuilder(sbTabs));
-			}
-		}
-	}
-
-	
 	@Override
 	protected void onResume() {
 		super.onResume();
@@ -355,11 +357,11 @@ public class MusicTest extends FragmentActivity implements TabListener {
 		}
 		return super.onKeyDown(keyCode, event);
 	}
-	
+	/*
 	public void setAlbumArt(Bitmap bitmap) {		
 		mAlbumArtView.setImageBitmap(bitmap);
 	}
-	
+	*/
 	private void dropBoxRoot(){
 		TextView text = (TextView)findViewById(R.id.textView1);
 		text.setText("");
@@ -422,23 +424,6 @@ public class MusicTest extends FragmentActivity implements TabListener {
             return mPageTitles[position];
         }
     }
-
-	@Override
-	public void onTabReselected(Tab tab, FragmentTransaction ft) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void onTabSelected(Tab tab, FragmentTransaction ft) {
-		mViewPager.setCurrentItem(tab.getPosition());
-	}
-
-	@Override
-	public void onTabUnselected(Tab tab, FragmentTransaction ft) {
-		// TODO Auto-generated method stub
-		
-	}
 	
 	public static class PlayListFragment extends Fragment {
 		
@@ -461,8 +446,7 @@ public class MusicTest extends FragmentActivity implements TabListener {
 		@Override
 		public void onItemClick(AdapterView<?> parent, View view, int pos,
 				long arg3) {
-			mMainLayout.removeView(mViewPager);
-			mActionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
+			mMainLayout.removeView(mLibraryView);
 			mMainLayout.addView(mTrackListView);
 			mCurrentMainView = PLAYLIST_TRACKS_VIEW;
 			mSelectedTrackList = MusicLibraryDBAdapter.instance.listPlaylistTracks(mPlaylists.get(pos).id);

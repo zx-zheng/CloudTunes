@@ -20,14 +20,25 @@
             android:layout_height="match_parent"
             android:background="#eee"
             android:orientation="vertical">
-            
-        	<android.support.v4.view.ViewPager xmlns:android="http://schemas.android.com/apk/res/android"
-    			android:id="@+id/pager"
-    			android:layout_width="match_parent"
-		    	android:layout_height="match_parent"
-		    	android:clickable="true"
-            	android:focusable="false"
-            	android:focusableInTouchMode="true"/>
+           
+            <LinearLayout
+                android:id="@+id/library"
+            	android:layout_width="match_parent"
+            	android:layout_height="match_parent"
+            	android:background="#eee"
+            	android:orientation="vertical">
+            	<com.astuetz.PagerSlidingTabStrip
+	    			android:id="@+id/tabs"
+    				android:layout_width="match_parent"
+    				android:layout_height="48dip" />
+        		<android.support.v4.view.ViewPager xmlns:android="http://schemas.android.com/apk/res/android"
+	    			android:id="@+id/pager"
+    				android:layout_width="match_parent"
+	    			android:layout_height="match_parent"
+	  	   			android:clickable="true"
+           			android:focusable="false"
+           			android:focusableInTouchMode="true"/>
+        		</LinearLayout>
         </LinearLayout>
        
     	<LinearLayout
@@ -41,6 +52,25 @@
                 android:layout_width="match_parent"
                 android:layout_height="68dp"
                 android:orientation="horizontal">
+        		
+                <FrameLayout 
+                    android:id="@+id/smallAlbumArt"
+            		android:layout_width="68dp"
+            		android:layout_height="match_parent">
+                    <ImageView 
+                        android:id="@+id/smallAlbumArtImage"
+		    			android:scaleType="fitCenter"
+		    			android:layout_width="68dp"
+		    			android:layout_height="match_parent"
+		    			android:src="@null"/>
+                    <TextView 
+                        android:id="@+id/smallalbumArtText"
+                        android:layout_width="68dp"
+		    			android:layout_height="match_parent"
+		    			android:text="\u266A"
+		    			android:textSize="100dp"
+		    			android:gravity="center"/>
+                </FrameLayout>
 
                 <LinearLayout
                     android:id="@+id/trackLabels"
@@ -77,16 +107,28 @@
         	        android:paddingLeft="10dp"
        			    android:gravity="center"
        			    android:background="@null"
-       			    android:textOff=""  
-  					android:textOn="" />
+       			    android:textOff="\u2016"  
+  					android:textOn="\u25B6"/>
 
             </LinearLayout>
-			<ImageView
-		    	android:id="@+id/albumArt"
-		    	android:scaleType="fitCenter"
-		    	android:layout_width="match_parent"
-		    	android:layout_height="wrap_content"
-		    	android:src="@drawable/ic_launcher" />
+            <FrameLayout 
+                    android:id="@+id/AlbumArtView"
+            		android:layout_width="68dp"
+            		android:layout_height="match_parent">
+					<ImageView
+			    		android:id="@+id/albumArtImage"
+			    		android:scaleType="fitCenter"
+		    			android:layout_width="match_parent"
+		    			android:layout_height="match_parent"
+		    			android:src="@null" />
+					<TextView 
+                        android:id="@+id/albumArtText"
+                        android:layout_width="match_parent"
+		    			android:layout_height="match_parent"
+		    			android:text="\u266A"
+		    			android:textSize="300dp"
+		    			android:gravity="center"/>
+            </FrameLayout>
 			
 			<SeekBar
 		    android:id="@+id/musicSeekBar"
@@ -104,11 +146,12 @@
            		android:gravity="center">
 				<Button
                 	android:id="@+id/prevButton"
-                	android:text="" 
+                	android:text="\u23EA" 
                 	android:layout_width="68dp"
     				android:layout_height="match_parent"
     				android:textSize="80dp"
-    				android:background="@null"/>
+    				android:background="@null"
+    				android:gravity="center"/>
 				<ToggleButton
                 	android:id="@+id/playButton1"
                 	android:text="" 
@@ -116,15 +159,17 @@
     				android:layout_height="match_parent"
     				android:textSize="100dp"
     				android:background="@null"
-    				android:textOff=""  
-  					android:textOn="" />
+    				android:textOff="\u2016"  
+  					android:textOn="\u25B6" 
+  					android:gravity="center"/>
 				<Button
                 	android:id="@+id/nextButton"
-                	android:text="" 
+                	android:text="\u23E9" 
                 	android:layout_width="68dp"
     				android:layout_height="match_parent"
     				android:textSize="80dp"
-    				android:background="@null"/>
+    				android:background="@null"
+    				android:gravity="center"/>
        		</LinearLayout>
 			
         </LinearLayout>

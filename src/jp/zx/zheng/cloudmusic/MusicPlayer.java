@@ -23,6 +23,8 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.sax.StartElementListener;
 import android.util.Log;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -37,7 +39,8 @@ public class MusicPlayer {
 	
 	private static MusicPlayer mMusicPlayer;
 	private SeekBar mSeekbar;
-	private ImageView mAlbumArtView;
+	private ImageView[] mAlbumArtViews;
+	private TextView[] mAlbumArtTexts;
 	private ToggleButton[] mPlayButtons;
 	private TextView mTrackNameLabel;
 	private TextView mArtistNameLabel;
@@ -122,8 +125,12 @@ public class MusicPlayer {
 				mConnection, Context.BIND_AUTO_CREATE);
 	}
 	
-	public void initAlbumArtView(ImageView view) {
-		mAlbumArtView = view;
+	public void initAlbumArtView(ImageView[] views) {
+		mAlbumArtViews = views;
+	}
+	
+	public void initAlbumArtText(TextView[] views) {
+		mAlbumArtTexts = views;
 	}
 	
 	public void setAlbumArt() {
@@ -133,7 +140,20 @@ public class MusicPlayer {
 	
 	public void setAlbumArt(byte[] albumArtData) {
 		if (albumArtData != null) {
-			mAlbumArtView.setImageBitmap(BitmapFactory.decodeByteArray(albumArtData, 0, albumArtData.length));
+			for(TextView view: mAlbumArtTexts) {
+				view.setVisibility(View.INVISIBLE);
+			}
+			for(ImageView view : mAlbumArtViews) {
+				view.setVisibility(View.VISIBLE);
+				view.setImageBitmap(BitmapFactory.decodeByteArray(albumArtData, 0, albumArtData.length));
+			}
+		} else {
+			for(TextView view: mAlbumArtTexts) {
+				view.setVisibility(View.VISIBLE);
+			}
+			for(ImageView view : mAlbumArtViews) {
+				view.setVisibility(View.INVISIBLE);
+			}
 		}
 	}
 	
