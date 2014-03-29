@@ -45,6 +45,7 @@
 		<activity android:name="jp.zx.zheng.cloudmusic.Finder"></activity>
 		<activity android:name="jp.zx.zheng.cloudmusic.LibraryFinder"></activity>
 		<service android:name="jp.zx.zheng.cloudmusic.MediaPlayerService"></service>
+		<activity android:name="jp.zx.zheng.cloudmusic.SettingActivity"></activity>
     </application>
     
 </manifest>

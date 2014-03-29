@@ -39,8 +39,7 @@ public class Finder extends Activity {
         setContentView(R.layout.finder);
         mFileListView = (ListView)findViewById(R.id.FileListView);
         mFileListView.setOnItemClickListener(new FinderClickedListener());
-        mDropbox = new Dropbox(getApplicationContext());
-        mDropbox.login(this);
+        mDropbox = Dropbox.getInstance(getApplicationContext());
         mMediaPlayer = new MediaPlayer();
         Intent intent = getIntent();
         String currentStringDir = intent.getStringExtra(Finder.PARENT_DIR);
@@ -66,35 +65,6 @@ public class Finder extends Activity {
 		return true;
 	}
 	
-	/*
-	private void playMusic(DbxPath dbxPath) {
-		FileInputStream file;
-		if (!CacheManager.isCached(dbxPath.toString())){
-			file = mDropbox.downloadFileAndCache(dbxPath);
-			Log.d("Main", "file cached");
-		} else {
-			file = CacheManager.getCacheFile(dbxPath.toString());
-			Log.d("Main", "read cache");
-		}
-		try {
-			mMediaPlayer.reset();
-			mMediaPlayer.setDataSource(file.getFD());
-			Toast.makeText(this, "Success, Path has been set", Toast.LENGTH_SHORT).show();
-			mMediaPlayer.prepare();
-			mMediaPlayer.start();
-		} catch (IllegalArgumentException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IllegalStateException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-	*/
-	
 	public class FinderClickedListener implements AdapterView.OnItemClickListener {
 
 		@Override
@@ -104,8 +74,11 @@ public class Finder extends Activity {
 			mParentPath = mCurrentPath;
 			mCurrentPath = new DbxPath(textView.getText().toString());
 			if (!reloadListView()) {
-				//playMusic(mCurrentPath);
-				mCurrentPath = mParentPath;
+				//mCurrentPath = mParentPath;
+				Intent data = new Intent();
+				data.putExtra("path", mCurrentPath.toString());
+				setResult(RESULT_OK, data);
+				finish();
 			}
 		}
 	}

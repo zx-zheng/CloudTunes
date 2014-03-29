@@ -12,9 +12,11 @@ import android.content.Context;
 import android.util.Log;
 
 import com.android.volley.Response.Listener;
+import com.dropbox.sync.android.DbxAccount;
 import com.dropbox.sync.android.DbxAccountManager;
 import com.dropbox.sync.android.DbxException;
 import com.dropbox.sync.android.DbxException.Unauthorized;
+import com.dropbox.sync.android.DbxAccountInfo;
 import com.dropbox.sync.android.DbxFile;
 import com.dropbox.sync.android.DbxFileInfo;
 import com.dropbox.sync.android.DbxFileSystem;
@@ -28,16 +30,38 @@ public class Dropbox {
 
     public static final int REQUEST_LINK_TO_DBX = 0;
     
-    private DbxAccountManager mDbxAcctMgr;
+    private static Dropbox instance;
+    private static DbxAccountManager mDbxAcctMgr;
     
-    public Dropbox (Context context) {
+    public static Dropbox getInstance(Context context) {
+    	if(instance == null) {
+    		instance = new Dropbox(context);
+    	}
+    	return instance;
+    }
+    
+    private Dropbox (Context context) {
     	mDbxAcctMgr = DbxAccountManager.getInstance(context, appKey, appSecret);
     }
     
     public void login (Activity activity) {
-    	if (!mDbxAcctMgr.hasLinkedAccount()) {
-    		mDbxAcctMgr.startLink(activity, REQUEST_LINK_TO_DBX);
+    	if (mDbxAcctMgr.hasLinkedAccount()) {
+    		mDbxAcctMgr.unlink();
     	}
+    	mDbxAcctMgr.startLink(activity, REQUEST_LINK_TO_DBX);
+    }
+    
+    public void getAccountNameAsync(DbxAccount.Listener listener) {
+    	DbxAccount account = mDbxAcctMgr.getLinkedAccount();
+    	account.addListener(listener);
+    }
+    
+    public String getAccoutName() {
+    	DbxAccountInfo accountInfo = mDbxAcctMgr.getLinkedAccount().getAccountInfo();
+    	if(accountInfo != null) {
+    		return accountInfo.displayName;
+    	}
+    	return "";
     }
     
     public boolean isLogin () {
@@ -67,7 +91,19 @@ public class Dropbox {
     	return fileList;
     }
     
-    public FileInputStream downloadFileAndCache (Track track) {
+    public FileInputStream downloadFile(String path) {
+    	try {
+    		DbxFileSystem dbxFs = DbxFileSystem.forAccount(mDbxAcctMgr.getLinkedAccount());
+    		dbxFs.getSyncStatus();
+    		DbxFile file = dbxFs.open(new DbxPath(path));
+    		return file.getReadStream();
+    	} catch  (Exception e) {
+			e.printStackTrace();
+		}
+    	return null;
+    }
+    
+    public FileInputStream downloadTrackFileAndCache (Track track) {
     	try {
 			DbxFileSystem dbxFs = DbxFileSystem.forAccount(mDbxAcctMgr.getLinkedAccount());
 			dbxFs.getSyncStatus();
@@ -92,6 +128,7 @@ public class Dropbox {
     }
     
     public FileInputStream getFileAndCache (Track track) {
-    	return downloadFileAndCache(track);
+    	return downloadTrackFileAndCache(track);
     }
+    
 }

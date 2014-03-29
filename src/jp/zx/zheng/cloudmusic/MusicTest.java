@@ -45,6 +45,7 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
@@ -179,7 +180,6 @@ public class MusicTest extends FragmentActivity {
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(windowSize.x, windowSize.x);
         albumArtView.setLayoutParams(params);
         mAlbumArtImage = (ImageView)findViewById(R.id.albumArtImage);
-        //mAlbumArtImage.setLayoutParams(params);
         mAlbumArtImage.setOnTouchListener(new OnTouchListener() {			
 			@Override
 			public boolean onTouch(View v, MotionEvent event) {
@@ -203,7 +203,7 @@ public class MusicTest extends FragmentActivity {
         mSeekBar = (SeekBar)findViewById(R.id.musicSeekBar);
         mMusicPlayer.initSeekBar(mSeekBar);
         //Ybox.getInstance().init(this);
-        mDropbox = new Dropbox(getApplicationContext());
+        mDropbox = Dropbox.getInstance(getApplicationContext());
         //Ybox.getInstance().setSid(this);
         
         playButton = (ToggleButton)findViewById(R.id.playButtun);
@@ -375,7 +375,7 @@ public class MusicTest extends FragmentActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-    	Log.d("Main", "onActivityResult");
+    	Log.d(TAG, "onActivityResult");
     	switch (requestCode) {
     	case Dropbox.REQUEST_LINK_TO_DBX:
     		dropBoxRoot();
@@ -391,8 +391,24 @@ public class MusicTest extends FragmentActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.music_test, menu);
+        getMenuInflater().inflate(R.menu.cloud_music, menu);
         return true;
+    }
+    
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+    	switch (item.getItemId()) {
+    	case R.id.action_settings:
+    		setting();
+    		return true;
+    	default:
+    		return super.onOptionsItemSelected(item);
+    	}
+    }
+    
+    private void setting() {
+    	Intent intent = new Intent(this, SettingActivity.class);
+    	startActivity(intent);
     }
     
     public static class AppSectionsPagerAdapter extends FragmentPagerAdapter {
@@ -432,13 +448,19 @@ public class MusicTest extends FragmentActivity {
 	            Bundle savedInstanceState) {
 			View rootView = inflater.inflate(R.layout.playlist_list, container, false);
 			mPlayListView = (ListView) rootView.findViewById(R.id.playListView);
-			mPlaylists = MusicLibraryDBAdapter.instance.listPlaylist();
-			ArrayAdapter<Playlist> adapter = new ArrayAdapter<Playlist>(getActivity(), 
-					R.layout.simple_list_item_1_black,
-					mPlaylists);
-			mPlayListView.setAdapter(adapter);
 			mPlayListView.setOnItemClickListener(new PlaylistClickedListener());
+			reloadPlayList(getActivity());
 			return rootView;
+		}
+		
+		public static void reloadPlayList(Context context) {
+			if(mPlayListView != null) {
+				mPlaylists = MusicLibraryDBAdapter.instance.listPlaylist();
+				ArrayAdapter<Playlist> adapter = new ArrayAdapter<Playlist>(context, 
+						R.layout.simple_list_item_1_black,
+						mPlaylists);
+				mPlayListView.setAdapter(adapter);
+			}
 		}
 	}
 	

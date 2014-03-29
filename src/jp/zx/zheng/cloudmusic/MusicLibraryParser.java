@@ -5,17 +5,22 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLDecoder;
+import java.util.List;
 
+import jp.zx.zheng.cloudstorage.dropbox.Dropbox;
 import jp.zx.zheng.db.MusicLibraryDBAdapter;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
 
+import android.app.Activity;
 import android.content.Context;
+import android.os.AsyncTask;
 import android.util.Log;
+import android.widget.Toast;
 
-public class MusicLibraryParser {
+public class MusicLibraryParser extends AsyncTask<String, String, String>{
 	
 	private static final String TAG = MusicLibraryParser.class.getName();
 	private static final String XML_TAG_DICT = "dict";
@@ -45,10 +50,13 @@ public class MusicLibraryParser {
 	private static final String XML_NAME_MUSIC = "Music";
 	private static final String XML_NAME_MOVIES = "Movies";
 		
+	Activity mActivity;
+	String mPath;
 	XmlPullParser mXpp;
 	MusicLibraryDBAdapter mDbadapter;
 	
 	public MusicLibraryParser(Context context, InputStream xmlFile) {
+		//mActivity = context;
 		try {
 			XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
 			BufferedInputStream bufferdXml = new BufferedInputStream(xmlFile);
@@ -58,6 +66,26 @@ public class MusicLibraryParser {
 			e.printStackTrace();
 		}
 		mDbadapter = MusicLibraryDBAdapter.instance;
+	}
+	
+	public MusicLibraryParser(Activity activity, String path) {
+		mActivity = activity;
+		mPath = path;
+		mDbadapter = MusicLibraryDBAdapter.instance;
+	}
+	
+	private boolean downloadAndOpenXml(String path) {
+		FileInputStream xmlFile = Dropbox.getInstance(mActivity).downloadFile(path);
+		try {
+			XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
+			BufferedInputStream bufferdXml = new BufferedInputStream(xmlFile);
+			mXpp = factory.newPullParser();
+			mXpp.setInput(bufferdXml, "UTF-8");
+			return true;
+		} catch (XmlPullParserException e) {
+			e.printStackTrace();
+		}
+		return false;
 	}
 	
 	public void parse(){
@@ -84,7 +112,6 @@ public class MusicLibraryParser {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		mDbadapter.close();
 	}
 	
 	private void parseMainDict() throws XmlPullParserException, IOException {
@@ -112,6 +139,13 @@ public class MusicLibraryParser {
 	}
 	
 	private void parseTracks() throws XmlPullParserException, IOException {
+		mActivity.runOnUiThread(new Runnable() {
+			
+			@Override
+			public void run() {
+				Toast.makeText(mActivity, "Loading Tracks", Toast.LENGTH_SHORT).show();	
+			}
+		});
 		Log.i(TAG, "start parse tracks");
 		//<dict>
 		int eventType = mXpp.next();
@@ -185,6 +219,13 @@ public class MusicLibraryParser {
 	}
 	
 	private void parsePlaylists() throws XmlPullParserException, IOException {
+		mActivity.runOnUiThread(new Runnable() {
+			
+			@Override
+			public void run() {
+				Toast.makeText(mActivity, "Loading Playlists", Toast.LENGTH_SHORT).show();		
+			}
+		});
 		//<array>
 		int eventType = mXpp.nextTag();
 		Log.d(TAG, mXpp.getName());
@@ -265,4 +306,31 @@ public class MusicLibraryParser {
 			}
 		}
 	}
+
+	@Override
+	protected String doInBackground(String... params) {
+		mActivity.runOnUiThread(new Runnable() {
+			
+			@Override
+			public void run() {
+				Toast.makeText(mActivity, "Updating iTunes library", Toast.LENGTH_SHORT).show();	
+			}
+		});
+		if(downloadAndOpenXml(mPath)) {
+			parse();
+		} else {
+			//Toast.makeText(mContext, "Failed to Update iTunes library", Toast.LENGTH_SHORT).show();
+		}
+		return null;
+	}
+	
+	@Override  
+    protected void onProgressUpdate(String... progress) {
+	
+	}
+	
+	@Override
+	protected void onPostExecute(String result) {
+        MusicTest.PlayListFragment.reloadPlayList(mActivity);
+    }
 }

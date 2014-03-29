@@ -24,7 +24,7 @@ public class ButtonsFragment extends Fragment {
 			Bundle savedInstanceState) {
 		View rootView = inflater.inflate(R.layout.buttons, container, false);
 		
-		mDropbox = new Dropbox(getActivity().getApplicationContext());
+		mDropbox = Dropbox.getInstance(getActivity().getApplicationContext());
 		
 		Button loginButton = (Button) rootView.findViewById(R.id.login);
 		loginButton.setOnClickListener(new OnClickListener() {

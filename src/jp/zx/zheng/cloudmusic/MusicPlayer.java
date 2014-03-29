@@ -103,7 +103,7 @@ public class MusicPlayer {
 	}
 
 	private MusicPlayer(Context context) {
-		mDropbox = new Dropbox(context);
+		mDropbox = Dropbox.getInstance(context);
 		mPlayList = new ArrayList<Track>();
 		mReadyQueue = new LinkedList<Track>();
 		mHandler = new Handler();

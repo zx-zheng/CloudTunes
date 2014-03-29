@@ -4,5 +4,21 @@
     <string name="app_name">MusicTest</string>
     <string name="action_settings">Settings</string>
     <string name="hello_world">Hello world!</string>
+    <string name="general">General</string>
+    <string name="cloud_storage">Cloud storage</string>
+    <string name="logged_in">Logged in as</string>
+    <string name="not_logged_in">Not logged in</string>
+    <string name="pref_storage_for_library_file">Storage for iTunes library</string>
+    <string name="itunes_music_library">iTunes Library File</string>
+    <string-array name="pref_cloud_storage_entry">
+        <item >Dropbox</item>
+    </string-array>
+    <string-array name="pref_cloud_storage_values">
+        <item >dropbox</item>
+    </string-array>
+    <string name="pref_cloud_storage_default">dropbox</string>
+    <string name="reload">Reload</string>
+    <string name="path_of_xml">Path of xml file</string>
+    <string name="path_of_xml_key">path_of_xml_key</string>
 
 </resources>

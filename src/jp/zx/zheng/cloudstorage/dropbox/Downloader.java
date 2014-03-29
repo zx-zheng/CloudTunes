@@ -32,7 +32,7 @@ public class Downloader extends AsyncTask<Track, Track, List<Track>> {
 		
 		for (int i = 0; i < tracks.length; i++) {
 			Log.d(TAG, "Downloading " + tracks[i]);
-			if(!CacheManager.isCached(tracks[i]) && mDropbox.downloadFileAndCache(tracks[i]) != null) {
+			if(!CacheManager.isCached(tracks[i]) && mDropbox.downloadTrackFileAndCache(tracks[i]) != null) {
 				list.add(tracks[i]);
 				Log.d(TAG, "Download complete " + tracks[i]);
 			}

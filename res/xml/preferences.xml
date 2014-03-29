@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+    <PreferenceCategory 
+        android:title="@string/general"
+        android:key="pref_key_general">
+    </PreferenceCategory>
+    <PreferenceCategory 
+        android:title="@string/itunes_music_library"
+        android:key="pref_key_itunes_music_library">
+        <PreferenceScreen 
+		    android:title="@string/reload" 
+		    android:key="reload">
+    	</PreferenceScreen>
+        <ListPreference
+            android:key="pref_storage_for_library_file"
+        	android:title="@string/pref_storage_for_library_file"
+        	android:dialogTitle="@string/pref_storage_for_library_file"
+        	android:entries="@array/pref_cloud_storage_entry"
+        	android:entryValues="@array/pref_cloud_storage_values"
+        	android:defaultValue="@string/pref_cloud_storage_default" />
+        <PreferenceScreen 
+		    android:title="@string/path_of_xml" 
+		    android:key="@string/path_of_xml_key">
+    	</PreferenceScreen>
+	</PreferenceCategory>
+	<PreferenceCategory 
+        android:title="@string/cloud_storage"
+        android:key="pref_key_cloud_storage">
+	</PreferenceCategory>
+		<PreferenceScreen 
+		    android:title="Dropbox" 
+		    android:key="dropbox_account">
+    	</PreferenceScreen>
+    	
+</PreferenceScreen>
