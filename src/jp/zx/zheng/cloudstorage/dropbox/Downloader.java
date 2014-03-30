@@ -31,10 +31,14 @@ public class Downloader extends AsyncTask<Track, Track, List<Track>> {
 		ArrayList<Track> list = new ArrayList<Track>();
 		
 		for (int i = 0; i < tracks.length; i++) {
-			Log.d(TAG, "Downloading " + tracks[i]);
-			if(!CacheManager.isCached(tracks[i]) && mDropbox.downloadTrackFileAndCache(tracks[i]) != null) {
-				list.add(tracks[i]);
-				Log.d(TAG, "Download complete " + tracks[i]);
+			if(!isCancelled()) {
+				Log.d(TAG, "Downloading " + tracks[i]);
+				if(!CacheManager.isCached(tracks[i]) && mDropbox.downloadTrackFileAndCache(tracks[i]) != null) {
+					list.add(tracks[i]);
+					Log.d(TAG, "Download complete " + tracks[i]);
+				}
+			} else {
+				Log.d(TAG, "Download canceled: " + tracks[i]);
 			}
 			publishProgress(tracks[i]);
 		}
@@ -51,5 +55,10 @@ public class Downloader extends AsyncTask<Track, Track, List<Track>> {
 	protected void onPostExecute(List<Track> tracks) {
         
     }
+	
+	@Override
+    protected void onCancelled(){
+		Log.d(TAG, "download task cancelled");
+	}
 
 }

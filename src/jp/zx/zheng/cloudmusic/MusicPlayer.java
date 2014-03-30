@@ -3,6 +3,8 @@ package jp.zx.zheng.cloudmusic;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -14,17 +16,23 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
+import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
 import android.sax.StartElementListener;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -42,6 +50,8 @@ public class MusicPlayer {
 	private ImageView[] mAlbumArtViews;
 	private TextView[] mAlbumArtTexts;
 	private ToggleButton[] mPlayButtons;
+	private Button mRepeatButton;
+	private Button mShuffuleButton;
 	private TextView mTrackNameLabel;
 	private TextView mArtistNameLabel;
 	
@@ -49,14 +59,24 @@ public class MusicPlayer {
 	private AsyncTask<Track, Track, List<Track>> mDownloader;
 	private MediaPlayerService mBoundMPservice;
 	private ServiceConnection mConnection;
-	private List<Track> mPlayList;
+	private List<Track> mCurrentPlayList;
+	private List<Track> mOriginalPlayList;
+	private List<Track> mShuffledPlayList;
 	private int currentPos;
 	private Queue<Track> mReadyQueue;
 	private MediaMetadataRetriever mMediaMetaData;
-	private FileInputStream currentPlayingFile;
+	private FileInputStream mCurrentPlayingFile;
+	private Track mCurrentTrack;
 	private Handler mHandler;
+	private SharedPreferences mPref;
+	private static final String PREF_IS_REPEAT_KEY = "isRepeatMode";
 	private boolean isInPlayingState = false;
 	private boolean isPlayingMusic = false;
+	private boolean isRepeatMode = false;
+	private boolean isShuffleMode = false;
+	
+	private static final int ACTIVE_BUTTON_COLOR = Color.BLACK;
+	private static final int INACTIVE_BUTTON_COLOR = Color.LTGRAY;
 	
 	private Runnable mSeekBarSetter = new Runnable() {
 		
@@ -64,7 +84,9 @@ public class MusicPlayer {
 		public void run() {
 			mSeekbar.setMax(mBoundMPservice.getDuration());
 			if (mSeekbar != null) {
-				mSeekbar.setProgress(mBoundMPservice.getCurrentPosition());
+				if(isInPlayingState) {
+					mSeekbar.setProgress(mBoundMPservice.getCurrentPosition());
+				}
 			}
 			if (isInPlayingState) {
 				mHandler.postDelayed(this, 500);
@@ -104,7 +126,8 @@ public class MusicPlayer {
 
 	private MusicPlayer(Context context) {
 		mDropbox = Dropbox.getInstance(context);
-		mPlayList = new ArrayList<Track>();
+		mOriginalPlayList = new ArrayList<Track>();
+		mShuffledPlayList = new ArrayList<Track>();
 		mReadyQueue = new LinkedList<Track>();
 		mHandler = new Handler();
 		mMediaMetaData = new MediaMetadataRetriever();
@@ -123,6 +146,9 @@ public class MusicPlayer {
 		};
 		context.bindService(new Intent(context, MediaPlayerService.class), 
 				mConnection, Context.BIND_AUTO_CREATE);
+		mPref = PreferenceManager.getDefaultSharedPreferences(context);
+		isRepeatMode = mPref.getBoolean(PREF_IS_REPEAT_KEY, true);
+		setRepeatButtonStatus();
 	}
 	
 	public void initAlbumArtView(ImageView[] views) {
@@ -170,48 +196,84 @@ public class MusicPlayer {
 	public void setPlayButton(ToggleButton[] buttons) {
 		mPlayButtons = buttons;
 	}
+	
+	public void setRepeateButoon(Button button) {
+		mRepeatButton = button;
+		setRepeatButtonStatus();
+	}
+	
+	public void setShuffleButton(Button button) {
+		mShuffuleButton = button;
+		setShuffleButtonStatus();
+	}
+	
+	public void reset() {
+		Log.d(TAG, "reset Music Player");
+		mBoundMPservice.reset();
+		isPlayingMusic = false;
+		isInPlayingState =false;
+		clearQuere();
+		mCurrentPlayingFile = null;
+		mCurrentTrack = null;
+		mSeekbar.setProgress(0);
+		setPlayButtonStatus();
+		setAlbumArt();
+		setTrackLabels();
+	}
 
 	public void playMusic(Track track) {
+		Log.d(TAG, "play music");
 		FileInputStream file;
 		if (!CacheManager.isCached(track)){
 			return;
 		} else {
 			file = CacheManager.getCacheFile(track);
-			Log.d("Main", "read cache");
+			Log.d(TAG, "read cache");
 		}
-		currentPlayingFile = file;
+		mCurrentTrack = track;
+		mCurrentPlayingFile = file;
 		mBoundMPservice.play(file);
 		setAlbumArt();
 		isInPlayingState = true;
 		isPlayingMusic = true;
 		setPlayButtonStatus();
-		setTrackLabels(track);
+		setTrackLabels();
 		mHandler.postDelayed(mSeekBarSetter, 500);
 	}
 	
-	private void setTrackLabels(Track track) {
-		mTrackNameLabel.setText(track.getName());
-		mArtistNameLabel.setText(track.getArtist());
+	public void setTrackLabels() {
+		if(mCurrentTrack == null) {
+			mTrackNameLabel.setText("");
+			mArtistNameLabel.setText("");
+			return;
+		}
+		mTrackNameLabel.setText(mCurrentTrack.getName());
+		mArtistNameLabel.setText(mCurrentTrack.getArtist());
 	}
 	
 	public void playNextTrack() {
 		isInPlayingState = false;
 		isPlayingMusic = false;
 		setPlayButtonStatus();
-		if(mPlayList.size() == 0) {
+		if(mCurrentPlayList.size() == 0) {
 			return;
 		}
 		do {
-			Log.d(TAG, "next track");
-			if(currentPos == mPlayList.size() - 1) {
+			Log.d(TAG, currentPos + " next track");
+			if(currentPos == mCurrentPlayList.size() - 1) {
 				currentPos = 0;
+				if(!isRepeatMode) {
+					reset();
+					return;
+				} 
 			} else {
 				currentPos++;
 			}
-		} while(!(mPlayList.get(currentPos).isUploaded || mPlayList.get(currentPos).isCached()));
+		} while(mReadyQueue.contains(mCurrentPlayList.get(currentPos))
+				&& !(mCurrentPlayList.get(currentPos).isUploaded || mCurrentPlayList.get(currentPos).isCached()));
 		
-		if(mReadyQueue.contains(mPlayList.get(currentPos))) {
-			playMusic(mPlayList.get(currentPos));
+		if(mReadyQueue.contains(mCurrentPlayList.get(currentPos))) {
+			playMusic(mCurrentPlayList.get(currentPos));
 		}
 	}
 	
@@ -219,20 +281,20 @@ public class MusicPlayer {
 		isInPlayingState = false;
 		isPlayingMusic = false;
 		setPlayButtonStatus();
-		if(mPlayList.size() == 0) {
+		if(mCurrentPlayList.size() == 0) {
 			return;
 		}
 		do {
 			Log.d(TAG, "previous track");
 			if(currentPos == 0) {
-				currentPos = mPlayList.size() - 1;
+				currentPos = mCurrentPlayList.size() - 1;
 			} else {
 				currentPos--;
 			}
-		} while(!(mPlayList.get(currentPos).isUploaded || mPlayList.get(currentPos).isCached()));
+		} while(!(mCurrentPlayList.get(currentPos).isUploaded || mCurrentPlayList.get(currentPos).isCached()));
 		
-		if(mReadyQueue.contains(mPlayList.get(currentPos))) {
-			playMusic(mPlayList.get(currentPos));
+		if(mReadyQueue.contains(mCurrentPlayList.get(currentPos))) {
+			playMusic(mCurrentPlayList.get(currentPos));
 		}
 	}
 	
@@ -255,14 +317,70 @@ public class MusicPlayer {
 		}
 	}
 	
+	public void setRepeatButtonStatus() {
+		if(mRepeatButton == null) {
+			return;
+		}
+		if(isRepeatMode) {
+			mRepeatButton.setTextColor(ACTIVE_BUTTON_COLOR);
+		} else {
+			mRepeatButton.setTextColor(INACTIVE_BUTTON_COLOR);
+		}
+	}
+	
+	public void toggleRepeatButton() {
+		if(isRepeatMode) {
+			isRepeatMode = false;
+		} else {
+			isRepeatMode = true;
+		}
+		Editor editor = mPref.edit();
+		editor.putBoolean(PREF_IS_REPEAT_KEY, isRepeatMode);
+		editor.apply();
+		setRepeatButtonStatus();
+	}
+	
+	public void setShuffleButtonStatus() {
+		if(mShuffuleButton == null) {
+			return;
+		}
+		if(isShuffleMode) {
+			mShuffuleButton.setTextColor(ACTIVE_BUTTON_COLOR);
+		} else {
+			mShuffuleButton.setTextColor(INACTIVE_BUTTON_COLOR);
+		}
+	}
+	
+	public void toggleShuffleButton() {
+		if(isShuffleMode) {
+			isShuffleMode = false;
+			mCurrentPlayList = mOriginalPlayList;
+			if(mCurrentTrack != null) {
+				currentPos = mOriginalPlayList.indexOf(mCurrentTrack);
+			} else {
+				currentPos = 0;
+			}
+			preparePlayList();
+		} else {
+			isShuffleMode = true;
+			if(isInPlayingState) {
+				shuffleTrackList(currentPos);
+				mCurrentPlayList = mShuffledPlayList;
+				currentPos = 0;
+				preparePlayList();
+			}
+		}
+		setShuffleButtonStatus();
+	}
+	
 	public boolean isPlayingMusic() {
 		return isPlayingMusic;
 	}
 	
 	public byte[] getAlbumArt() {
 		try {
-			if(currentPlayingFile != null) {
-				mMediaMetaData.setDataSource(currentPlayingFile.getFD());
+			if(mCurrentPlayingFile != null) {
+				mMediaMetaData.setDataSource(mCurrentPlayingFile.getFD());
 				return mMediaMetaData.getEmbeddedPicture();
 			} else {
 				return null;
@@ -276,49 +394,65 @@ public class MusicPlayer {
 		}
 	}
 	
-	public void addToList(Track track) {
-		mPlayList.add(track);
-	}
-	
 	public void addToListAndPlay(List<Track> trackList, int startPos) {
-		mPlayList.clear();
+		mOriginalPlayList.clear();
+		mShuffledPlayList.clear();
 		mReadyQueue.clear();
 		isInPlayingState = false;
-		mPlayList.addAll(trackList);
-		currentPos = startPos;
+		mOriginalPlayList.addAll(trackList);
+		if(isShuffleMode) {
+			shuffleTrackList(startPos);
+			mCurrentPlayList = mShuffledPlayList;
+			currentPos = 0;
+		} else {
+			mCurrentPlayList = mOriginalPlayList;
+			currentPos = startPos;
+		}
+		
 		//download file in background
 		preparePlayList();
-		playMusic(mPlayList.get(currentPos));
+		playMusic(mCurrentPlayList.get(currentPos));
+	}
+	
+	private void shuffleTrackList(int pos) {
+		Log.d(TAG, "shuffle playlist");
+		mShuffledPlayList.clear();
+		mShuffledPlayList.addAll(mOriginalPlayList);
+		Collections.shuffle(mShuffledPlayList);
+		Collections.swap(mShuffledPlayList,
+				mShuffledPlayList.indexOf(mOriginalPlayList.get(pos)), 0);
 	}
 	
 	private void preparePlayList() {
 		//prepare selected track first
-		Track[] trackArray = new Track[mPlayList.size()];
-		for(int i = currentPos; i < mPlayList.size(); i++) {
-			trackArray[i - currentPos] = mPlayList.get(i);
+		Track[] trackArray = new Track[mCurrentPlayList.size()];
+		for(int i = currentPos; i < mCurrentPlayList.size(); i++) {
+			trackArray[i - currentPos] = mCurrentPlayList.get(i);
 		}
 		for(int i = 0; i < currentPos; i++) {
-			trackArray[i + mPlayList.size() - currentPos] = mPlayList.get(i);
+			trackArray[i + mCurrentPlayList.size() - currentPos] = mCurrentPlayList.get(i);
 		}
 		if(mDownloader != null) {
-			mDownloader.cancel(true);
+			mDownloader.cancel(false);
 		}
+		Log.d(TAG, "execute new download task");
 		mDownloader = new Downloader(mDropbox, this).execute(trackArray);
 	}
 	
 	public void addToReadyQueue(Track track) {
 		mReadyQueue.offer(track);
-		if (mReadyQueue.contains(mPlayList.get(currentPos)) && !isInPlayingState) {
-			if(!track.isUploaded) {
+		if (mCurrentPlayList.indexOf(track) == currentPos && !isInPlayingState) {
+			if(!(track.isUploaded || track.isCached())) {
 				playNextTrack();
 				return;
 			}
-			playMusic(mPlayList.get(currentPos));
+			Log.d(TAG, "play " + track.getName());
+			playMusic(mCurrentPlayList.get(currentPos));
 		}
 	}
 	
 	public void clearQuere() {
-		mPlayList.clear();
+		mCurrentPlayList.clear();
 	}
 	
 }

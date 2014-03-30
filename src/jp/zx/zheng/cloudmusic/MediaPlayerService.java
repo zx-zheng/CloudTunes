@@ -89,5 +89,10 @@ implements MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener{
 	public void onCompletion(MediaPlayer mp) {
 		MusicPlayer.getInstance(getApplicationContext()).playNextTrack();
 	}
+	
+	public void reset() {
+		mMediaPlayer.stop();
+		mMediaPlayer.reset();
+	}
 
 }

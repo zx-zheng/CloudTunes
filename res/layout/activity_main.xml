@@ -145,6 +145,14 @@
            		android:orientation="horizontal"
            		android:gravity="center">
 				<Button
+                	android:id="@+id/repeatButton"
+                	android:text="\u1F501" 
+                	android:layout_width="80dp"
+    				android:layout_height="match_parent"
+    				android:textSize="80dp"
+    				android:background="@null"
+    				android:gravity="center"/>
+				<Button
                 	android:id="@+id/prevButton"
                 	android:text="\u23EA" 
                 	android:layout_width="68dp"
@@ -166,6 +174,14 @@
                 	android:id="@+id/nextButton"
                 	android:text="\u23E9" 
                 	android:layout_width="68dp"
+    				android:layout_height="match_parent"
+    				android:textSize="80dp"
+    				android:background="@null"
+    				android:gravity="center"/>
+				<Button
+                	android:id="@+id/shuffleButton"
+                	android:text="\u1F500" 
+                	android:layout_width="80dp"
     				android:layout_height="match_parent"
     				android:textSize="80dp"
     				android:background="@null"

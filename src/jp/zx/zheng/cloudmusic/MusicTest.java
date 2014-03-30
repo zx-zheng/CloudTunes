@@ -85,15 +85,15 @@ public class MusicTest extends FragmentActivity {
 	private static ListView mAlbumListView;
 	private static ListView mTrackListView;
 	private static ListView mPlayListView;
+	private static ListView mArtistListView;
 	private static ImageView mAlbumArtImage;
 	private static ImageView mSmallAlbumArtImage;
-	private String mCurrentArtist;
-	private String mCurrentAlbum;
+	private static String mCurrentArtist;
+	private static String mCurrentAlbum;
 	private SeekBar mSeekBar;
 	public static SlidingUpPanelLayout mSlidingUpPanelLayout;
 	private static LinearLayout mMainLayout;
 	private View mDragView;
-	private static ArtistListFragment mArtistListFragment;
 	private static ButtonsFragment mButtonsFragment;
 	private static int mCurrentMainView = 0;
 	public static List<Track> mSelectedTrackList;
@@ -139,13 +139,10 @@ public class MusicTest extends FragmentActivity {
 			}
 		});
        
-        //mDragView = findViewById(R.id.dragView);
-        mArtistListFragment = new ArtistListFragment();
-        mArtistListFragment.setArtistsListViewListener(new ArtistClickedListener());
         mButtonsFragment = new ButtonsFragment();
         
         mMusicPlayer = MusicPlayer.getInstance(getApplicationContext());
-        
+                
         mAppSectionsPagerAdapter = new AppSectionsPagerAdapter(getSupportFragmentManager());
         // Set up the action bar.
         mActionBar = getActionBar();
@@ -200,6 +197,8 @@ public class MusicTest extends FragmentActivity {
         mMusicPlayer.initLabels(
         		(TextView)findViewById(R.id.trackTitleLabel),
         		(TextView)findViewById(R.id.artistLabel));
+        mMusicPlayer.setTrackLabels();
+        
         mSeekBar = (SeekBar)findViewById(R.id.musicSeekBar);
         mMusicPlayer.initSeekBar(mSeekBar);
         //Ybox.getInstance().init(this);
@@ -209,8 +208,6 @@ public class MusicTest extends FragmentActivity {
         playButton = (ToggleButton)findViewById(R.id.playButtun);
         playButton.setMovementMethod(LinkMovementMethod.getInstance());
         playButton.setTypeface(mEntypo);
-        //playButton.setTextOn("\u25B6");
-        //playButton.setTextOff("\u2016");
         playButton.setChecked(!mMusicPlayer.isPlayingMusic());
         playButton.setOnClickListener(new OnClickListener() {			
 			@Override
@@ -250,7 +247,6 @@ public class MusicTest extends FragmentActivity {
         
         Button prevButton = (Button) findViewById(R.id.prevButton);
         prevButton.setTypeface(mEntypo);
-        //prevButton.setText("\u23EA");
         prevButton.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
@@ -260,14 +256,34 @@ public class MusicTest extends FragmentActivity {
         
         Button nextButton = (Button) findViewById(R.id.nextButton);
         nextButton.setTypeface(mEntypo);
-        //nextButton.setText("\u23E9");
         nextButton.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				mMusicPlayer.playNextTrack();				
 			}
 		});
+        //http://stackoverflow.com/questions/9834964/char-to-unicode-more-than-uffff-in-java
+        Button repeatButton = (Button) findViewById(R.id.repeatButton);
+        repeatButton.setTypeface(mEntypo);
+        repeatButton.setText(new StringBuilder().appendCodePoint(0x1F501).toString());
+        repeatButton.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				mMusicPlayer.toggleRepeatButton();
+			}
+		});
+        mMusicPlayer.setRepeateButoon(repeatButton);
         
+        Button shuffleButton = (Button) findViewById(R.id.shuffleButton);
+        shuffleButton.setTypeface(mEntypo);
+        shuffleButton.setText(new StringBuilder().appendCodePoint(0x1F500).toString());
+        shuffleButton.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				mMusicPlayer.toggleShuffleButton();
+			}
+		});
+        mMusicPlayer.setShuffleButton(shuffleButton);
 	}
 	
 	private void goToMainView() {
@@ -283,10 +299,10 @@ public class MusicTest extends FragmentActivity {
 		mCurrentMainView = ALBUMS_VIEW;
 	}
 	
-	public class ArtistClickedListener implements AdapterView.OnItemClickListener {
+	public static class ArtistClickedListener implements AdapterView.OnItemClickListener {
 
 		@Override
-		public void onItemClick(AdapterView<?> arg0, View view, int arg2,
+		public void onItemClick(AdapterView<?> parent, View view, int arg2,
 				long arg3) {
 			mMainLayout.removeView(mLibraryView);
 			mMainLayout.addView(mAlbumListView);
@@ -294,7 +310,7 @@ public class MusicTest extends FragmentActivity {
 			
 			TextView textView = (TextView)view;
 			mCurrentArtist = textView.getText().toString();
-			ArrayAdapter<String> adapter = new ArrayAdapter<String>(getApplicationContext(),
+			ArrayAdapter<String> adapter = new ArrayAdapter<String>(parent.getContext(),
 					R.layout.simple_list_item_1_black, 
 					MusicLibraryDBAdapter.instance.listAlbum(mCurrentArtist));
 			mAlbumListView.setAdapter(adapter);
@@ -302,7 +318,7 @@ public class MusicTest extends FragmentActivity {
 		}	
 	}
 	
-	public class AlbumClickedListener implements AdapterView.OnItemClickListener {
+	public static class AlbumClickedListener implements AdapterView.OnItemClickListener {
 		@Override
 		public void onItemClick(AdapterView<?> parent, View view, int arg2,
 				long arg3) {
@@ -313,7 +329,7 @@ public class MusicTest extends FragmentActivity {
 			TextView textView = (TextView)view;
 			mCurrentAlbum = textView.getText().toString();
 			mSelectedTrackList = MusicLibraryDBAdapter.instance.listAlbumTracks(mCurrentArtist, mCurrentAlbum);
-			ArrayAdapter<Track> adapter = new ArrayAdapter<Track>(getApplicationContext(),
+			ArrayAdapter<Track> adapter = new ArrayAdapter<Track>(parent.getContext(),
 					R.layout.simple_list_item_1_black, 
 					mSelectedTrackList);
 			mTrackListView.setAdapter(adapter);
@@ -422,7 +438,7 @@ public class MusicTest extends FragmentActivity {
         public Fragment getItem(int i) {
             switch (i) {
                 case 0:
-                    return mArtistListFragment;
+                    return new ArtistListFragment();
                 case 1:
                 	return new PlayListFragment();
                 default:
@@ -477,6 +493,26 @@ public class MusicTest extends FragmentActivity {
 					mSelectedTrackList);
 			mTrackListView.setAdapter(adapter);
 			mTrackListView.setOnItemClickListener(new TrackClickedListener());
+		}
+	}
+	
+	public static class ArtistListFragment extends Fragment {
+		@Override
+	    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+	            Bundle savedInstanceState) {
+			View rootView = inflater.inflate(R.layout.finder, container, false);
+			
+			mArtistListView = (ListView)rootView.findViewById(R.id.FileListView);
+	        mMusicPlayer = MusicPlayer.getInstance(getActivity());
+	        reLoadArtists(getActivity());
+			return rootView;
+		}
+		
+		public static void reLoadArtists(Activity activity) {
+			ArrayAdapter<String> adapter = new ArrayAdapter<String>(activity,
+					R.layout.simple_list_item_1_black, MusicLibraryDBAdapter.instance.listAlbumArtists());
+			mArtistListView.setAdapter(adapter);
+			mArtistListView.setOnItemClickListener(new ArtistClickedListener());
 		}
 	}
 }

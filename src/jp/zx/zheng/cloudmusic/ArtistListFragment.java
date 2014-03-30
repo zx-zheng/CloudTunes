@@ -39,17 +39,6 @@ public class ArtistListFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
             Bundle savedInstanceState) {
 		View rootView = inflater.inflate(R.layout.finder, container, false);
-		rootView.setOnTouchListener(new OnTouchListener() {
-        	
-        	@Override
-        	public boolean onTouch(View v, MotionEvent event) {
-				//Log.d(TAG, "artistList:onTouchEvent");
-				if(MusicTest.mSlidingUpPanelLayout.isExpanded()) {
-					//MusicTest.mSlidingUpPanelLayout.onTouchEvent(event);
-				}
-				return false;
-			}
-		});
 		
 		mListView = (ListView)rootView.findViewById(R.id.FileListView);
         mDbAdapter = MusicLibraryDBAdapter.instance;

@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.net.URLDecoder;
 import java.util.List;
 
+import jp.zx.zheng.cloudstorage.CloudStorageFile;
 import jp.zx.zheng.cloudstorage.dropbox.Dropbox;
 import jp.zx.zheng.db.MusicLibraryDBAdapter;
 
@@ -15,6 +16,7 @@ import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.util.Log;
@@ -54,6 +56,7 @@ public class MusicLibraryParser extends AsyncTask<String, String, String>{
 	String mPath;
 	XmlPullParser mXpp;
 	MusicLibraryDBAdapter mDbadapter;
+	ProgressDialog mDialog;
 	
 	public MusicLibraryParser(Context context, InputStream xmlFile) {
 		//mActivity = context;
@@ -72,17 +75,22 @@ public class MusicLibraryParser extends AsyncTask<String, String, String>{
 		mActivity = activity;
 		mPath = path;
 		mDbadapter = MusicLibraryDBAdapter.instance;
+		mDialog = new ProgressDialog(activity);
+		mDialog.setCancelable(false);
+		mDialog.setCanceledOnTouchOutside(false);
 	}
 	
-	private boolean downloadAndOpenXml(String path) {
-		FileInputStream xmlFile = Dropbox.getInstance(mActivity).downloadFile(path);
+	private boolean openXml(CloudStorageFile file) {
 		try {
+			FileInputStream xmlFile = file.getReadStream();
 			XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
 			BufferedInputStream bufferdXml = new BufferedInputStream(xmlFile);
 			mXpp = factory.newPullParser();
 			mXpp.setInput(bufferdXml, "UTF-8");
 			return true;
 		} catch (XmlPullParserException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return false;
@@ -143,7 +151,7 @@ public class MusicLibraryParser extends AsyncTask<String, String, String>{
 			
 			@Override
 			public void run() {
-				Toast.makeText(mActivity, "Loading Tracks", Toast.LENGTH_SHORT).show();	
+				mDialog.setMessage("Loading Tracks...");
 			}
 		});
 		Log.i(TAG, "start parse tracks");
@@ -218,12 +226,12 @@ public class MusicLibraryParser extends AsyncTask<String, String, String>{
 		}
 	}
 	
-	private void parsePlaylists() throws XmlPullParserException, IOException {
+	private void parsePlaylists() throws XmlPullParserException, IOException {		
 		mActivity.runOnUiThread(new Runnable() {
 			
 			@Override
 			public void run() {
-				Toast.makeText(mActivity, "Loading Playlists", Toast.LENGTH_SHORT).show();		
+				mDialog.setMessage("Loading Playlists...");
 			}
 		});
 		//<array>
@@ -309,18 +317,21 @@ public class MusicLibraryParser extends AsyncTask<String, String, String>{
 
 	@Override
 	protected String doInBackground(String... params) {
+		mDialog.setMessage("Updating iTunes library...");
+		CloudStorageFile file = Dropbox.getInstance(mActivity).downloadFile(mPath);
 		mActivity.runOnUiThread(new Runnable() {
 			
 			@Override
 			public void run() {
-				Toast.makeText(mActivity, "Updating iTunes library", Toast.LENGTH_SHORT).show();	
+				mDialog.show();
 			}
 		});
-		if(downloadAndOpenXml(mPath)) {
+		if(openXml(file)) {
 			parse();
 		} else {
 			//Toast.makeText(mContext, "Failed to Update iTunes library", Toast.LENGTH_SHORT).show();
 		}
+		file.close();
 		return null;
 	}
 	
@@ -332,5 +343,7 @@ public class MusicLibraryParser extends AsyncTask<String, String, String>{
 	@Override
 	protected void onPostExecute(String result) {
         MusicTest.PlayListFragment.reloadPlayList(mActivity);
+        MusicTest.ArtistListFragment.reLoadArtists(mActivity);
+        mDialog.dismiss();
     }
 }

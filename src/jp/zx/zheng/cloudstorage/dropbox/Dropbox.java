@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import jp.zx.zheng.cloudmusic.Track;
+import jp.zx.zheng.cloudstorage.CloudStorageFile;
 import jp.zx.zheng.storage.CacheManager;
 import android.app.Activity;
 import android.content.Context;
@@ -91,12 +92,12 @@ public class Dropbox {
     	return fileList;
     }
     
-    public FileInputStream downloadFile(String path) {
+    public CloudStorageFile downloadFile(String path) {
     	try {
     		DbxFileSystem dbxFs = DbxFileSystem.forAccount(mDbxAcctMgr.getLinkedAccount());
     		dbxFs.getSyncStatus();
     		DbxFile file = dbxFs.open(new DbxPath(path));
-    		return file.getReadStream();
+    		return new DbxFileAdapter(file);
     	} catch  (Exception e) {
 			e.printStackTrace();
 		}
@@ -114,7 +115,7 @@ public class Dropbox {
 				DbxFile file = dbxFs.open(dbxPath);
 				CacheManager.saveCache(file.getReadStream(), track);
 				track.isCached = true;
-				file.close();
+				//file.close();
 				return CacheManager.getCacheFile(track);
 			} else {
 				track.isUploaded = false;
