@@ -9,9 +9,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 
+import jp.zx.zheng.cloudmusic.MediaPlayerService.State;
 import jp.zx.zheng.cloudstorage.dropbox.Downloader;
 import jp.zx.zheng.cloudstorage.dropbox.Dropbox;
 import jp.zx.zheng.storage.CacheManager;
+import android.app.Activity;
+import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -34,6 +37,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.ToggleButton;
@@ -49,11 +53,14 @@ public class MusicPlayer {
 	private SeekBar mSeekbar;
 	private ImageView[] mAlbumArtViews;
 	private TextView[] mAlbumArtTexts;
+	private ProgressBar mProgressBar;
 	private ToggleButton[] mPlayButtons;
 	private Button mRepeatButton;
 	private Button mShuffuleButton;
 	private TextView mTrackNameLabel;
 	private TextView mArtistNameLabel;
+	private Activity mMainActivity;
+	public Bitmap mCurrentAlbumArt;
 	
 	private Dropbox mDropbox;
 	private AsyncTask<Track, Track, List<Track>> mDownloader;
@@ -63,7 +70,7 @@ public class MusicPlayer {
 	private List<Track> mOriginalPlayList;
 	private List<Track> mShuffledPlayList;
 	private int currentPos;
-	private Queue<Track> mReadyQueue;
+	private Queue<Integer> mReadyQueue;
 	private MediaMetadataRetriever mMediaMetaData;
 	private FileInputStream mCurrentPlayingFile;
 	private Track mCurrentTrack;
@@ -75,15 +82,17 @@ public class MusicPlayer {
 	private boolean isRepeatMode = false;
 	private boolean isShuffleMode = false;
 	
+	public PendingIntent mPiPrepared;
+	
 	private static final int ACTIVE_BUTTON_COLOR = Color.BLACK;
 	private static final int INACTIVE_BUTTON_COLOR = Color.LTGRAY;
 	
 	private Runnable mSeekBarSetter = new Runnable() {
 		
 		@Override
-		public void run() {
-			mSeekbar.setMax(mBoundMPservice.getDuration());
+		public void run() {			
 			if (mSeekbar != null) {
+				mSeekbar.setMax(mBoundMPservice.getDuration());
 				if(isInPlayingState) {
 					mSeekbar.setProgress(mBoundMPservice.getCurrentPosition());
 				}
@@ -128,7 +137,7 @@ public class MusicPlayer {
 		mDropbox = Dropbox.getInstance(context);
 		mOriginalPlayList = new ArrayList<Track>();
 		mShuffledPlayList = new ArrayList<Track>();
-		mReadyQueue = new LinkedList<Track>();
+		mReadyQueue = new LinkedList<Integer>();
 		mHandler = new Handler();
 		mMediaMetaData = new MediaMetadataRetriever();
 		mConnection = new ServiceConnection() {
@@ -151,27 +160,43 @@ public class MusicPlayer {
 		setRepeatButtonStatus();
 	}
 	
-	public void initAlbumArtView(ImageView[] views) {
+	public void setAlbumArtView(ImageView[] views, Activity activity) {
 		mAlbumArtViews = views;
+		mMainActivity = activity;
 	}
 	
-	public void initAlbumArtText(TextView[] views) {
+	public void setAlbumArtText(TextView[] views) {
 		mAlbumArtTexts = views;
 	}
 	
 	public void setAlbumArt() {
-		byte[] albumArtData = getAlbumArt();
-		setAlbumArt(albumArtData);
+		mMainActivity.runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				byte[] albumArtData = getAlbumArt();
+				setAlbumArt(mCurrentAlbumArt);		
+			}
+		});		
 	}
 	
-	public void setAlbumArt(byte[] albumArtData) {
-		if (albumArtData != null) {
+	public void setAlbumArt(Track track) {
+		byte[] albumArtData = track.getAlbumArt(track);
+    	Bitmap bitmap = null;
+    	if(albumArtData != null) {
+    		bitmap = BitmapFactory.decodeByteArray(albumArtData, 0, albumArtData.length);
+    	}
+    	mCurrentAlbumArt = bitmap;
+		setAlbumArt(bitmap);	
+	}
+	
+	public void setAlbumArt(Bitmap albumArt) {
+		if (albumArt != null) {
 			for(TextView view: mAlbumArtTexts) {
 				view.setVisibility(View.INVISIBLE);
 			}
 			for(ImageView view : mAlbumArtViews) {
 				view.setVisibility(View.VISIBLE);
-				view.setImageBitmap(BitmapFactory.decodeByteArray(albumArtData, 0, albumArtData.length));
+				view.setImageBitmap(albumArt);
 			}
 		} else {
 			for(TextView view: mAlbumArtTexts) {
@@ -183,12 +208,12 @@ public class MusicPlayer {
 		}
 	}
 	
-	public void initSeekBar(SeekBar seekBar) {
+	public void setSeekBar(SeekBar seekBar) {
 		mSeekbar = seekBar;
 		mSeekbar.setOnSeekBarChangeListener(mSeekBarChangeListener);
 	}
 	
-	public void initLabels(TextView trackNameLabel, TextView artistNameLabel) {
+	public void setLabels(TextView trackNameLabel, TextView artistNameLabel) {
 		mTrackNameLabel = trackNameLabel;
 		mArtistNameLabel = artistNameLabel;
 	}
@@ -207,9 +232,14 @@ public class MusicPlayer {
 		setShuffleButtonStatus();
 	}
 	
+	public void setProgressBar(ProgressBar bar) {
+		mProgressBar = bar;
+		mProgressBar.setVisibility(View.INVISIBLE);
+	}
+	
 	public void reset() {
 		Log.d(TAG, "reset Music Player");
-		mBoundMPservice.reset();
+		mBoundMPservice.stop();
 		isPlayingMusic = false;
 		isInPlayingState =false;
 		clearQuere();
@@ -217,28 +247,52 @@ public class MusicPlayer {
 		mCurrentTrack = null;
 		mSeekbar.setProgress(0);
 		setPlayButtonStatus();
-		setAlbumArt();
+		//setAlbumArt();
 		setTrackLabels();
 	}
 
-	public void playMusic(Track track) {
+	private void playMusic(Track track) {
+		/*
 		Log.d(TAG, "play music");
 		FileInputStream file;
 		if (!CacheManager.isCached(track)){
+			prepareTrack(currentPos);
 			return;
 		} else {
 			file = CacheManager.getCacheFile(track);
 			Log.d(TAG, "read cache");
 		}
+		mProgressBar.setVisibility(View.INVISIBLE);
 		mCurrentTrack = track;
 		mCurrentPlayingFile = file;
-		mBoundMPservice.play(file);
+		track.setFile(file);
+		mBoundMPservice.play(track);
 		setAlbumArt();
 		isInPlayingState = true;
 		isPlayingMusic = true;
 		setPlayButtonStatus();
 		setTrackLabels();
 		mHandler.postDelayed(mSeekBarSetter, 500);
+		*/
+	}
+	
+	public void updateUI(Track track) {
+		setTrackLabels(track);
+		mSeekbar.setProgress(0);
+		if(!track.isCached()) {
+			mProgressBar.setVisibility(View.VISIBLE);
+		}
+	}
+	
+	public void updateUI2(Track track) {	
+		setAlbumArt(track);
+		mProgressBar.setVisibility(View.INVISIBLE);
+		mHandler.postDelayed(mSeekBarSetter, 500);
+	}
+	
+	public void setTrackLabels(Track track) {
+		mTrackNameLabel.setText(track.getName());
+		mArtistNameLabel.setText(track.getArtist());
 	}
 	
 	public void setTrackLabels() {
@@ -252,6 +306,7 @@ public class MusicPlayer {
 	}
 	
 	public void playNextTrack() {
+		/*
 		isInPlayingState = false;
 		isPlayingMusic = false;
 		setPlayButtonStatus();
@@ -269,15 +324,74 @@ public class MusicPlayer {
 			} else {
 				currentPos++;
 			}
-		} while(mReadyQueue.contains(mCurrentPlayList.get(currentPos))
+		} while(mReadyQueue.contains(mCurrentPlayList.get(currentPos).getId())
 				&& !(mCurrentPlayList.get(currentPos).isUploaded || mCurrentPlayList.get(currentPos).isCached()));
 		
-		if(mReadyQueue.contains(mCurrentPlayList.get(currentPos))) {
+		prepareTrack(currentPos);
+		
+		if(mReadyQueue.contains(mCurrentPlayList.get(currentPos).getId())) {
 			playMusic(mCurrentPlayList.get(currentPos));
 		}
+		*/
+		mBoundMPservice.processSkipRequest();
 	}
 	
+	public Track prepareCurrentTrack() {
+		mCurrentTrack = mCurrentPlayList.get(currentPos);
+		return mCurrentTrack;
+	}
+	
+	public Track prepareNextTrack() {
+		if(currentPos < 0 || mCurrentPlayList == null || mCurrentPlayList.size() == 0) {
+			return null;
+		}
+				
+		if(currentPos == mCurrentPlayList.size() - 1) {			
+			if(!isRepeatMode) {
+				currentPos = -1;
+				return null;
+			} else {
+				currentPos = 0;	
+			}
+		} else {
+			currentPos++;
+		}
+		Track nextTrack = mCurrentPlayList.get(currentPos);
+		mCurrentTrack = nextTrack;
+		return nextTrack;
+	}
+	
+	public Track preparePrevTrack() {
+		if(currentPos < 0 || mCurrentPlayList == null || mCurrentPlayList.size() == 0) {
+			return null;
+		}
+		
+		if(currentPos == 0) {
+			currentPos = mCurrentPlayList.size() - 1; 
+		} else {
+			currentPos--;
+		}
+		Track prevTrack = mCurrentPlayList.get(currentPos);
+		mCurrentTrack = prevTrack;
+		return prevTrack;
+	}
+	
+	
+	/*
+	private void prepareTrack(int pos) {
+		mBoundMPservice.stop();
+		isInPlayingState = false;
+		mSeekbar.setProgress(0);
+		mCurrentTrack = mCurrentPlayList.get(pos);
+		mCurrentPlayingFile = null;
+		mProgressBar.setVisibility(View.VISIBLE);
+		setTrackLabels();
+		setAlbumArt();
+	}
+	*/
+	
 	public void playPrevTrack() {
+		/*
 		isInPlayingState = false;
 		isPlayingMusic = false;
 		setPlayButtonStatus();
@@ -293,27 +407,30 @@ public class MusicPlayer {
 			}
 		} while(!(mCurrentPlayList.get(currentPos).isUploaded || mCurrentPlayList.get(currentPos).isCached()));
 		
-		if(mReadyQueue.contains(mCurrentPlayList.get(currentPos))) {
+		if(mReadyQueue.contains(mCurrentPlayList.get(currentPos).getId())) {
 			playMusic(mCurrentPlayList.get(currentPos));
 		}
+		*/
+		
+		mBoundMPservice.processRewindRequest();
 	}
 	
 	public void start() {
-		if(mBoundMPservice.start()) {
-			isPlayingMusic = true;
-		}
+		mBoundMPservice.processPlayRequest(false);			
 		setPlayButtonStatus();
 	}
 	
 	public void pause() {
-		mBoundMPservice.pause();
+		mBoundMPservice.processPauseRequest();
 		isPlayingMusic = false;
 		setPlayButtonStatus();
 	}
 	
-	private void setPlayButtonStatus() {
-		for(ToggleButton button: mPlayButtons){
-			button.setChecked(!isPlayingMusic);
+	public void setPlayButtonStatus() {
+		if(mBoundMPservice != null) {
+			for(ToggleButton button: mPlayButtons){
+				button.setChecked(!(mBoundMPservice.getState() == State.Playing));
+			}
 		}
 	}
 	
@@ -377,6 +494,26 @@ public class MusicPlayer {
 		return isPlayingMusic;
 	}
 	
+	public byte[] getAlbumArt(Track track) {
+		return track.getAlbumArt(track);
+		/*
+		try {
+			if(track.getFile() != null) {
+				mMediaMetaData.setDataSource(track.getFile().getFD());
+				return mMediaMetaData.getEmbeddedPicture();
+			} else {
+				return null;
+			}
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+			return null;
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		}
+		*/
+	}
+	
 	public byte[] getAlbumArt() {
 		try {
 			if(mCurrentPlayingFile != null) {
@@ -411,7 +548,8 @@ public class MusicPlayer {
 		
 		//download file in background
 		preparePlayList();
-		playMusic(mCurrentPlayList.get(currentPos));
+		mBoundMPservice.processPlayRequest(true);
+		//playMusic(mCurrentPlayList.get(currentPos));
 	}
 	
 	private void shuffleTrackList(int pos) {
@@ -436,23 +574,42 @@ public class MusicPlayer {
 			mDownloader.cancel(false);
 		}
 		Log.d(TAG, "execute new download task");
-		mDownloader = new Downloader(mDropbox, this).execute(trackArray);
+		mDownloader = new Downloader(mDropbox, this, mPiPrepared).
+				executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, trackArray);
 	}
 	
 	public void addToReadyQueue(Track track) {
-		mReadyQueue.offer(track);
-		if (mCurrentPlayList.indexOf(track) == currentPos && !isInPlayingState) {
-			if(!(track.isUploaded || track.isCached())) {
+		mReadyQueue.offer(track.getId());
+		if (mCurrentPlayList.get(currentPos).getId() == track.getId() && !isInPlayingState) {
+			Log.d(TAG, track + " upload:" + track.isUploaded + " cache:" + track.isCached());
+			if(!track.isUploaded && !track.isCached()) {
 				playNextTrack();
 				return;
 			}
-			Log.d(TAG, "play " + track.getName());
-			playMusic(mCurrentPlayList.get(currentPos));
+			Log.d(TAG, "play " + track.getName());			
+			//playMusic(mCurrentPlayList.get(currentPos));
 		}
 	}
 	
 	public void clearQuere() {
 		mCurrentPlayList.clear();
+	}
+	
+	public void setUpAsForeground() {
+		if(mBoundMPservice != null) {
+			if(mBoundMPservice.getState() == State.Playing) {
+				mBoundMPservice.isPausing = true;
+				mBoundMPservice.setUpAsForeground(mCurrentTrack);
+			}
+		}
+	}
+	
+	public void cancelNotification() {
+		if(mBoundMPservice != null) {
+			if(mBoundMPservice.getState() == State.Playing) {
+				mBoundMPservice.cancelNotification();
+			}
+		}
 	}
 	
 }

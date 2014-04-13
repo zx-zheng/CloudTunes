@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="100dp"
+    android:orientation="horizontal">
+
+    <ImageView
+    	    android:id="@+id/albumart_notif"
+    	    android:layout_width="100dp"
+    	    android:layout_height="match_parent"
+    	    android:src="@drawable/above_shadow" />
+    
+    <LinearLayout
+    	android:layout_width="match_parent"
+    	android:layout_height="match_parent"
+    	android:orientation="vertical"
+    	android:gravity="center">
+    	<LinearLayout
+	    	android:layout_width="match_parent"
+	    	android:layout_height="60dp"
+    		android:orientation="vertical"
+    		android:gravity="left">
+	    	<TextView
+        		android:id="@+id/title_notif"
+        		android:layout_width="wrap_content"
+        		android:layout_height="wrap_content"
+        		android:scrollHorizontally="true"
+        		android:singleLine="true"	
+        		android:padding="5dp"
+        		android:text="TextView" />
+			<TextView
+	        	android:id="@+id/artist_notif"
+        		android:layout_width="wrap_content"
+        		android:layout_height="wrap_content"
+        		android:scrollHorizontally="true"
+        		android:singleLine="true"
+        		android:padding="5dp"
+        		android:text="TextView" />
+    	
+    	</LinearLayout>
+		
+    	
+	    <LinearLayout 
+        	android:layout_width="match_parent"
+   	    	android:layout_height="match_parent"
+   	    	android:orientation="horizontal"
+        	android:gravity="center">
+    		<Button
+	        	android:id="@+id/rewind"
+	        	android:layout_width="0dp"
+    	    	android:layout_height="match_parent"
+    	    	android:layout_weight="1"
+	        	android:text="\u23EA" 
+    	    	android:background="@null"
+	        	android:gravity="center"/>
+	    	<ImageButton
+        		android:id="@+id/playpause"
+        		android:layout_width="0dp"
+	        	android:layout_height="match_parent"
+	        	android:layout_weight="1"
+   		       	android:background="@null"
+				android:gravity="center"/>
+    		<Button
+	        	android:id="@+id/skip"
+	    	    android:layout_width="0dp"
+        		android:layout_height="match_parent"
+        		android:layout_weight="1"
+        		android:text="\u23E9" 
+        		android:background="@null"
+				android:gravity="center"/>
+    	</LinearLayout>
+    	
+    </LinearLayout>
+</LinearLayout>
+	
+	

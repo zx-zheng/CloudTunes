@@ -60,6 +60,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -147,10 +148,6 @@ public class MusicTest extends FragmentActivity {
         // Set up the action bar.
         mActionBar = getActionBar();
 
-        // Specify that the Home/Up button should not be enabled, since there is no hierarchical
-        // parent.
-        mActionBar.setHomeButtonEnabled(false);
-
         // Specify that we will be displaying tabs in the action bar.
         //mActionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
         
@@ -188,19 +185,20 @@ public class MusicTest extends FragmentActivity {
         mSmallAlbumArtImage = (ImageView)findViewById(R.id.smallAlbumArtImage);
         TextView smallAlbumArtText = (TextView) findViewById(R.id.smallalbumArtText);
         smallAlbumArtText.setTypeface(mEntypo);
-        mMusicPlayer.initAlbumArtView(
-        		new ImageView[]{mAlbumArtImage, (ImageView)findViewById(R.id.smallAlbumArtImage)});
-        mMusicPlayer.initAlbumArtText(
+        mMusicPlayer.setAlbumArtView(
+        		new ImageView[]{mAlbumArtImage, (ImageView)findViewById(R.id.smallAlbumArtImage)},
+        		this);
+        mMusicPlayer.setAlbumArtText(
         		new TextView[]{albumArtText,smallAlbumArtText});        				
         mMusicPlayer.setAlbumArt();
         
-        mMusicPlayer.initLabels(
+        mMusicPlayer.setLabels(
         		(TextView)findViewById(R.id.trackTitleLabel),
         		(TextView)findViewById(R.id.artistLabel));
         mMusicPlayer.setTrackLabels();
         
         mSeekBar = (SeekBar)findViewById(R.id.musicSeekBar);
-        mMusicPlayer.initSeekBar(mSeekBar);
+        mMusicPlayer.setSeekBar(mSeekBar);
         //Ybox.getInstance().init(this);
         mDropbox = Dropbox.getInstance(getApplicationContext());
         //Ybox.getInstance().setSid(this);
@@ -244,6 +242,7 @@ public class MusicTest extends FragmentActivity {
         });
                 
         mMusicPlayer.setPlayButton(new ToggleButton[]{playButton, mPlayButton1});
+        mMusicPlayer.setPlayButtonStatus();
         
         Button prevButton = (Button) findViewById(R.id.prevButton);
         prevButton.setTypeface(mEntypo);
@@ -284,9 +283,13 @@ public class MusicTest extends FragmentActivity {
 			}
 		});
         mMusicPlayer.setShuffleButton(shuffleButton);
+        
+        mMusicPlayer.setProgressBar((ProgressBar) findViewById(R.id.progressBar));
 	}
 	
 	private void goToMainView() {
+		mActionBar.setDisplayHomeAsUpEnabled(false);
+		mActionBar.setTitle(R.string.app_name);
 		mMainLayout.removeView(mAlbumListView);
 		mMainLayout.removeView(mTrackListView);
 		mMainLayout.addView(mLibraryView);
@@ -294,6 +297,8 @@ public class MusicTest extends FragmentActivity {
 	}
 	
 	private void goToAlbumsListView() {
+		mActionBar.setTitle(mCurrentArtist);
+		mActionBar.setDisplayHomeAsUpEnabled(true);
 		mMainLayout.removeView(mTrackListView);
 		mMainLayout.addView(mAlbumListView);
 		mCurrentMainView = ALBUMS_VIEW;
@@ -304,12 +309,14 @@ public class MusicTest extends FragmentActivity {
 		@Override
 		public void onItemClick(AdapterView<?> parent, View view, int arg2,
 				long arg3) {
+			mActionBar.setDisplayHomeAsUpEnabled(true);
 			mMainLayout.removeView(mLibraryView);
 			mMainLayout.addView(mAlbumListView);
 			mCurrentMainView = ALBUMS_VIEW;
 			
 			TextView textView = (TextView)view;
 			mCurrentArtist = textView.getText().toString();
+			mActionBar.setTitle(mCurrentArtist);
 			ArrayAdapter<String> adapter = new ArrayAdapter<String>(parent.getContext(),
 					R.layout.simple_list_item_1_black, 
 					MusicLibraryDBAdapter.instance.listAlbum(mCurrentArtist));
@@ -322,12 +329,14 @@ public class MusicTest extends FragmentActivity {
 		@Override
 		public void onItemClick(AdapterView<?> parent, View view, int arg2,
 				long arg3) {
+			mActionBar.setDisplayHomeAsUpEnabled(true);
 			mMainLayout.removeView(mAlbumListView);
 			mMainLayout.addView(mTrackListView);
 			mCurrentMainView = TRACKS_VIEW;
 			
 			TextView textView = (TextView)view;
 			mCurrentAlbum = textView.getText().toString();
+			mActionBar.setTitle(mCurrentAlbum);
 			mSelectedTrackList = MusicLibraryDBAdapter.instance.listAlbumTracks(mCurrentArtist, mCurrentAlbum);
 			ArrayAdapter<Track> adapter = new ArrayAdapter<Track>(parent.getContext(),
 					R.layout.simple_list_item_1_black, 
@@ -349,35 +358,37 @@ public class MusicTest extends FragmentActivity {
 	@Override
 	protected void onResume() {
 		super.onResume();
-		if (mDropbox.isLogin()) {
-			//dropBoxRoot();
-		}
+		Log.d(TAG, "onResume");
+		mMusicPlayer.cancelNotification();
 	}
 	
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
 		if(keyCode==KeyEvent.KEYCODE_BACK){
-			if(mSlidingUpPanelLayout.isExpanded()) {
-				mSlidingUpPanelLayout.collapsePane();
-				return true;
-			} else if(mCurrentMainView == ALBUMS_VIEW) {
-				goToMainView();
-				return true;
-			} else if(mCurrentMainView == TRACKS_VIEW) {
-				goToAlbumsListView();
-				return true;
-			} else if(mCurrentMainView == PLAYLIST_TRACKS_VIEW) {
-				goToMainView();
+			if(backAction()){
 				return true;
 			}
 		}
 		return super.onKeyDown(keyCode, event);
 	}
-	/*
-	public void setAlbumArt(Bitmap bitmap) {		
-		mAlbumArtView.setImageBitmap(bitmap);
+	
+	private boolean backAction() {
+		if(mSlidingUpPanelLayout.isExpanded()) {
+			mSlidingUpPanelLayout.collapsePane();
+			return true;
+		} else if(mCurrentMainView == ALBUMS_VIEW) {
+			goToMainView();
+			return true;
+		} else if(mCurrentMainView == TRACKS_VIEW) {
+			goToAlbumsListView();
+			return true;
+		} else if(mCurrentMainView == PLAYLIST_TRACKS_VIEW) {
+			goToMainView();
+			return true;
+		}
+		return false;
 	}
-	*/
+	
 	private void dropBoxRoot(){
 		TextView text = (TextView)findViewById(R.id.textView1);
 		text.setText("");
@@ -405,6 +416,13 @@ public class MusicTest extends FragmentActivity {
     }
     
     @Override
+    protected void onPause() {
+    	super.onPause();
+    	Log.d(TAG, "onPause");
+    	mMusicPlayer.setUpAsForeground();
+    }
+    
+    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.cloud_music, menu);
@@ -416,6 +434,9 @@ public class MusicTest extends FragmentActivity {
     	switch (item.getItemId()) {
     	case R.id.action_settings:
     		setting();
+    		return true;
+    	case android.R.id.home:
+    		backAction();
     		return true;
     	default:
     		return super.onOptionsItemSelected(item);
@@ -484,13 +505,20 @@ public class MusicTest extends FragmentActivity {
 		@Override
 		public void onItemClick(AdapterView<?> parent, View view, int pos,
 				long arg3) {
+			mActionBar.setDisplayHomeAsUpEnabled(true);
+			mActionBar.setTitle(mPlaylists.get(pos).name);
 			mMainLayout.removeView(mLibraryView);
 			mMainLayout.addView(mTrackListView);
 			mCurrentMainView = PLAYLIST_TRACKS_VIEW;
 			mSelectedTrackList = MusicLibraryDBAdapter.instance.listPlaylistTracks(mPlaylists.get(pos).id);
+			/*
 			ArrayAdapter<Track> adapter = new ArrayAdapter<Track>(parent.getContext(),
 					R.layout.simple_list_item_1_black, 
 					mSelectedTrackList);
+					*/
+			PlayListTrackArrayAdapter adapter = 
+					new PlayListTrackArrayAdapter(parent.getContext(),
+							R.layout.playlist_track, mSelectedTrackList);
 			mTrackListView.setAdapter(adapter);
 			mTrackListView.setOnItemClickListener(new TrackClickedListener());
 		}

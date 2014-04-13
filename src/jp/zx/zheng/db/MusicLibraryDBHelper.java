@@ -162,18 +162,19 @@ public class MusicLibraryDBHelper extends SQLiteOpenHelper {
 	
 	public List<Track> listAlbumTracks(SQLiteDatabase db, String albumArtist, String album) {
 		List<Track> trackList = new ArrayList<Track>();
-		String[] columns = {COL_NAME, COL_ARTIST, COL_LOCATION, COL_DICS_NUMBER, COL_TRACK_NUMBER};
+		String[] columns = {COL_ID, COL_NAME, COL_ARTIST, COL_LOCATION, COL_DICS_NUMBER, COL_TRACK_NUMBER};
 		Cursor cursor = db.query(true, TABLE_TRACKS_NAME, columns, 
 				COL_ALBUM_ARTIST + " = ? and " + COL_ALBUM +" = ?",
 				new String[]{albumArtist, album}, null, null, 
 				COL_DICS_NUMBER + "," + COL_TRACK_NUMBER, null);
 		
 		while(cursor.moveToNext()) {
+			int id = cursor.getInt(cursor.getColumnIndex(COL_ID));
 			String name = cursor.getString(cursor.getColumnIndex(COL_NAME));
 			String artist = cursor.getString(cursor.getColumnIndex(COL_ARTIST));
 			String location = cursor.getString(cursor.getColumnIndex(COL_LOCATION));
 			if(album != null) {
-				trackList.add(new Track(name, artist, albumArtist, album, location));
+				trackList.add(new Track(id, name, artist, albumArtist, album, location));
 				//Log.d(TAG, "album:" + album);
 			}
 		}
@@ -203,12 +204,13 @@ public class MusicLibraryDBHelper extends SQLiteOpenHelper {
 		Log.d(TAG, sql);
 		Cursor cursor = db.rawQuery(sql, new String[]{Integer.toString(playlistId)});
 		while(cursor.moveToNext()) {
+			int id = cursor.getInt(cursor.getColumnIndex(COL_ID));
 			String name = cursor.getString(cursor.getColumnIndex(COL_NAME));
 			String artist = cursor.getString(cursor.getColumnIndex(COL_ARTIST));
 			String albumArtist = cursor.getString(cursor.getColumnIndex(COL_ALBUM_ARTIST));
 			String album = cursor.getString(cursor.getColumnIndex(COL_ALBUM));
 			String location = cursor.getString(cursor.getColumnIndex(COL_LOCATION));
-			trackList.add(new Track(name, artist, albumArtist, album, location));
+			trackList.add(new Track(id, name, artist, albumArtist, album, location));
 		}
 		return trackList;
 	}

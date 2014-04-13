@@ -21,21 +21,23 @@ public class CacheManager {
 	private static final String TAG = CacheManager.class.getName();
 	private static final String CACHE_DIR = "/CloudMusic/";
 	
+	public static String getCachePath(Track track) {
+		String trackPath = pathTodbxPath(track.getLocation()).toString();
+		return Environment.getExternalStorageDirectory() + CACHE_DIR + convertPath(trackPath);
+	}
+	
 	public static boolean isCached (Track track) {
 		//System.out.println(Environment.getExternalStorageDirectory());
-		String trackPath = pathTodbxPath(track.getLocation()).toString();
-		String fullPath = Environment.getExternalStorageDirectory() + CACHE_DIR + convertPath(trackPath);
+		String fullPath = getCachePath(track);
 		return new File(fullPath).exists();
 	}
 	
 	public static FileInputStream getCacheFile (Track track) {
-		String trackPath = pathTodbxPath(track.getLocation()).toString();
-		String fullPath = Environment.getExternalStorageDirectory() + CACHE_DIR + convertPath(trackPath);
+		String fullPath = getCachePath(track);
 		File file = new File(fullPath);
 		try {
 			return new FileInputStream(file);
 		} catch (FileNotFoundException e) {
-			track.isCached = false;
 			e.printStackTrace();
 			return null;
 		}

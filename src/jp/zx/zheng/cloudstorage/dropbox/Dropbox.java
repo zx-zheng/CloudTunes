@@ -104,7 +104,7 @@ public class Dropbox {
     	return null;
     }
     
-    public FileInputStream downloadTrackFileAndCache (Track track) {
+    public FileInputStream downloadTrackFileAndCache (Track track) throws DbxException.AlreadyOpen{
     	try {
 			DbxFileSystem dbxFs = DbxFileSystem.forAccount(mDbxAcctMgr.getLinkedAccount());
 			dbxFs.getSyncStatus();
@@ -114,22 +114,25 @@ public class Dropbox {
 				Log.d(TAG, "open: " + dbxPath.toString());
 				DbxFile file = dbxFs.open(dbxPath);
 				CacheManager.saveCache(file.getReadStream(), track);
-				track.isCached = true;
-				//file.close();
+				file.close();
 				return CacheManager.getCacheFile(track);
 			} else {
 				track.isUploaded = false;
 				Log.w(TAG, dbxPath.toString() + " not found");
 			}
-
+    	} catch (DbxException.AlreadyOpen e) {
+    		Log.d(TAG, track + " is already opened and downloading");
+    		track.isUploaded = true;
+    		throw e;
     	} catch (IOException e) {
 			e.printStackTrace();
 		}
     	return null;
     }
-    
+    /*
     public FileInputStream getFileAndCache (Track track) {
     	return downloadTrackFileAndCache(track);
     }
+    */
     
 }

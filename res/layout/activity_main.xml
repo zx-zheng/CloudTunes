@@ -60,16 +60,22 @@
                     <ImageView 
                         android:id="@+id/smallAlbumArtImage"
 		    			android:scaleType="fitCenter"
-		    			android:layout_width="68dp"
+		    			android:layout_width="match_parent"
 		    			android:layout_height="match_parent"
 		    			android:src="@null"/>
                     <TextView 
                         android:id="@+id/smallalbumArtText"
-                        android:layout_width="68dp"
+                        android:layout_width="match_parent"
 		    			android:layout_height="match_parent"
 		    			android:text="\u266A"
 		    			android:textSize="100dp"
 		    			android:gravity="center"/>
+                    <ProgressBar
+                        android:id="@+id/progressBar"
+         				android:layout_width="match_parent"
+				        android:layout_height="match_parent"
+         				style="@android:style/Widget.ProgressBar.Large"
+         				android:gravity="center"/>
                 </FrameLayout>
 
                 <LinearLayout
@@ -86,6 +92,10 @@
                     	android:layout_height="0dp"
                     	android:layout_weight="1"
                     	android:gravity="center_vertical"
+                    	android:scrollHorizontally="true"
+        				android:singleLine="true"
+        				android:ellipsize="marquee"
+        				android:marqueeRepeatLimit="marquee_forever"
                     	android:paddingLeft="10dp"/>
 
 	                <TextView
@@ -94,6 +104,10 @@
             	        android:layout_height="0dp"
                 	    android:layout_weight="1"
 	                    android:gravity="center_vertical"
+	                    android:scrollHorizontally="true"
+        				android:singleLine="true"
+        				android:ellipsize="marquee"
+        				android:marqueeRepeatLimit="marquee_forever"
     	                android:paddingLeft="10dp"/>
 				</LinearLayout>
 				
