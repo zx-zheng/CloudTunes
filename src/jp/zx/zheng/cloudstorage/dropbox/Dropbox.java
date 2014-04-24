@@ -29,7 +29,7 @@ public class Dropbox {
 
 	private static final String TAG = Dropbox.class.getName();
     private static final String appKey = "jffm42sh7pd6gqp";
-    private static final String appSecret = "";
+    private static final String appSecret = "6o2w7yyalpeqqt3";
     private static final String DROPBOX_APP_CACHE_DIR = "app_DropboxSyncCache";
 
     public static final int REQUEST_LINK_TO_DBX = 0;
@@ -171,6 +171,17 @@ public class Dropbox {
     				}
     			}
     		}
+    		DbxFileSystem dbxFs;
+			try {
+				dbxFs = DbxFileSystem.forAccount(mDbxAcctMgr.getLinkedAccount());
+				dbxFs.awaitFirstSync();
+			} catch (Unauthorized e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (DbxException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}    		
     	}
     }
     
