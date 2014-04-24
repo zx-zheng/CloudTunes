@@ -30,6 +30,7 @@ public class Downloader extends AsyncTask<Track, Track, List<Track>> {
 		mDropbox = dropbox;
 		mMusicPlayer = musicPlayer;
 		mPi = pi;
+		mDropbox.startDownloadTask();
 	}
 	
 	@Override
@@ -50,7 +51,6 @@ public class Downloader extends AsyncTask<Track, Track, List<Track>> {
 					//e1.printStackTrace();
 					tracks[i].isPrepared = false;
 				}
-				
 				try {
 					if(MediaPlayerService.isWaitingPrepare()) {
 						mPi.send();
@@ -83,12 +83,15 @@ public class Downloader extends AsyncTask<Track, Track, List<Track>> {
 	
 	@Override
 	protected void onPostExecute(List<Track> tracks) {
-        
+		mDropbox.endDownloadTask();
+		mDropbox.deleteCache();
     }
 	
 	@Override
     protected void onCancelled(){
 		Log.d(TAG, "download task cancelled");
+		mDropbox.endDownloadTask();
+		mDropbox.deleteCache();
 	}
 
 }

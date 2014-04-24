@@ -1,9 +1,11 @@
 package jp.zx.zheng.cloudstorage.dropbox;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import jp.zx.zheng.cloudmusic.Track;
 import jp.zx.zheng.cloudstorage.CloudStorageFile;
@@ -27,12 +29,15 @@ public class Dropbox {
 
 	private static final String TAG = Dropbox.class.getName();
     private static final String appKey = "jffm42sh7pd6gqp";
-    private static final String appSecret = "6o2w7yyalpeqqt3";
+    private static final String appSecret = "";
+    private static final String DROPBOX_APP_CACHE_DIR = "app_DropboxSyncCache";
 
     public static final int REQUEST_LINK_TO_DBX = 0;
     
     private static Dropbox instance;
     private static DbxAccountManager mDbxAcctMgr;
+    private Context mContext;
+    private AtomicInteger mDownloadCount = new AtomicInteger(0);
     
     public static Dropbox getInstance(Context context) {
     	if(instance == null) {
@@ -43,6 +48,19 @@ public class Dropbox {
     
     private Dropbox (Context context) {
     	mDbxAcctMgr = DbxAccountManager.getInstance(context, appKey, appSecret);
+    	mContext = context;
+    }
+    
+    public void startDownloadTask() {
+    	mDownloadCount.incrementAndGet();
+    }
+    
+    public boolean isDownloading() {
+    	return mDownloadCount.get() > 0;
+    }
+    
+    public void endDownloadTask() {
+    	mDownloadCount.decrementAndGet();
     }
     
     public void login (Activity activity) {
@@ -129,10 +147,31 @@ public class Dropbox {
 		}
     	return null;
     }
-    /*
-    public FileInputStream getFileAndCache (Track track) {
-    	return downloadTrackFileAndCache(track);
+    
+    public void deleteCache() {
+    	if(isDownloading()) {
+    		Log.d(TAG, "Downloading. Deleting cache is canceled");
+    		return;
+    	}
+    	Log.d(TAG, "delete cache");
+    	File appDir = new File(mContext.getCacheDir().getParent());
+    	if(appDir.exists()) {
+    		File cacheDir = new File(appDir, DROPBOX_APP_CACHE_DIR);
+    		File dropboxAppDir = new File(cacheDir, appKey);
+    		if(dropboxAppDir.exists()) {
+    			String[] children = dropboxAppDir.list();
+    			for(String dir : children) {
+    				File targetDir = new File(dropboxAppDir, dir);
+    				File fileDir = new File(targetDir, "files");
+    				if(fileDir.exists()) {
+    					for(String file : fileDir.list()) {
+    						new File(fileDir, file).delete();
+    					}
+    					new File(targetDir, "cache.db").delete();    					
+    				}
+    			}
+    		}
+    	}
     }
-    */
     
 }

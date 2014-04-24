@@ -266,6 +266,7 @@ implements MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener{
 		if(force) {
 			playCurrentTrack();
 		} else if(mState == State.Paused) {
+			MusicPlayer.getInstance(getApplicationContext()).startSeekbar(mMusicDuration);
 			mMediaPlayer.start();
 			mState = State.Playing;
 			if(isPausing) {
@@ -286,6 +287,12 @@ implements MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener{
 	}
 	
 	public void processRewindRequest() {
+		if(mState == State.Playing || mState == State.Paused) {
+			if(mMediaPlayer.getCurrentPosition() > 3000) {
+				mMediaPlayer.seekTo(0);
+				return;
+			}
+		}
 		processStopRequest(false);
 		playNextTrack(true);		
 	}
@@ -330,6 +337,7 @@ implements MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener{
 		updateNotification();
 		configAndStartMediaPlayer();
 		MusicPlayer.getInstance(getApplicationContext()).setPlayButtonStatus();
+		MusicPlayer.getInstance(getApplicationContext()).startSeekbar(mMusicDuration);
 	}
 
 	private void configAndStartMediaPlayer() {
@@ -341,6 +349,7 @@ implements MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener{
 	@Override
 	public void onCompletion(MediaPlayer mp) {
 		MusicPlayer.getInstance(getApplicationContext()).playNextTrack();
+		MusicPlayer.getInstance(getApplicationContext()).resetSeekbar();
 	}
 	
 	public void stop() {
@@ -363,14 +372,19 @@ implements MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener{
      */
     void setUpAsForeground(Track track) {
     	mNotificationBuilder.setTicker("CloudMusic")
-    	.setSmallIcon(R.drawable.ic_launcher);
+    	.setSmallIcon(R.drawable.ic_cloud_music);
     	mNotificationView.setTextViewText(R.id.title_notif, track.getName());
     	mNotificationSmallView.setTextViewText(R.id.title_notif_small, track.getName());
     	mNotificationView.setTextViewText(R.id.artist_notif, track.getArtist());
     	mNotificationSmallView.setTextViewText(R.id.artist_notif_small, track.getArtist());
-    	Bitmap bitmap = MusicPlayer.getInstance(getApplicationContext()).mCurrentAlbumArt;    	
-    	mNotificationView.setImageViewBitmap(R.id.albumart_notif, bitmap);
-    	mNotificationSmallView.setImageViewBitmap(R.id.albumart_notif_small, bitmap);
+    	Bitmap bitmap = MusicPlayer.getInstance(getApplicationContext()).mCurrentAlbumArt;
+    	if(bitmap != null) {
+    		mNotificationView.setImageViewBitmap(R.id.albumart_notif, bitmap);
+    		mNotificationSmallView.setImageViewBitmap(R.id.albumart_notif_small, bitmap);
+    	} else {
+    		mNotificationView.setImageViewResource(R.id.albumart_notif, R.drawable.ic_cloud_music);
+    		mNotificationSmallView.setImageViewResource(R.id.albumart_notif, R.drawable.ic_cloud_music);
+    	}
     	mNotificationBuilder.setAutoCancel(true);
     	mNotification = mNotificationBuilder.build();
     	mNotification.bigContentView = mNotificationView;

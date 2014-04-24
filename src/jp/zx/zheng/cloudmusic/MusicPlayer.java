@@ -91,17 +91,24 @@ public class MusicPlayer {
 		
 		@Override
 		public void run() {			
-			if (mSeekbar != null) {
-				mSeekbar.setMax(mBoundMPservice.getDuration());
-				if(isInPlayingState) {
-					mSeekbar.setProgress(mBoundMPservice.getCurrentPosition());
-				}
-			}
-			if (isInPlayingState) {
+			if (mBoundMPservice.getState() == State.Playing) {
+				mSeekbar.setProgress(mBoundMPservice.getCurrentPosition());
 				mHandler.postDelayed(this, 500);
 			}
 		}
 	};
+	
+	public void startSeekbar(int duration) {
+		if (mSeekbar != null) {			
+			mSeekbar.setMax(mBoundMPservice.getDuration());
+			mHandler.postDelayed(mSeekBarSetter, 500);
+		}
+	}
+	
+	public void resetSeekbar() {
+		mSeekbar.setMax(1);
+		mSeekbar.setProgress(0);
+	}
 	
 	private OnSeekBarChangeListener mSeekBarChangeListener = new OnSeekBarChangeListener() {
 		
@@ -278,7 +285,6 @@ public class MusicPlayer {
 	
 	public void updateUI(Track track) {
 		setTrackLabels(track);
-		mSeekbar.setProgress(0);
 		if(!track.isCached()) {
 			mProgressBar.setVisibility(View.VISIBLE);
 		}
@@ -287,7 +293,6 @@ public class MusicPlayer {
 	public void updateUI2(Track track) {	
 		setAlbumArt(track);
 		mProgressBar.setVisibility(View.INVISIBLE);
-		mHandler.postDelayed(mSeekBarSetter, 500);
 	}
 	
 	public void setTrackLabels(Track track) {

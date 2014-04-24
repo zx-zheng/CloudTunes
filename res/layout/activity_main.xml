@@ -128,12 +128,13 @@
             <FrameLayout 
                     android:id="@+id/AlbumArtView"
             		android:layout_width="68dp"
-            		android:layout_height="match_parent">
+            		android:layout_height="match_parent"
+            		android:background="#d6d6d6">
 					<ImageView
 			    		android:id="@+id/albumArtImage"
 			    		android:scaleType="fitCenter"
 		    			android:layout_width="match_parent"
-		    			android:layout_height="match_parent"
+		    			android:layout_height="match_parent"		    			
 		    			android:src="@null" />
 					<TextView 
                         android:id="@+id/albumArtText"
