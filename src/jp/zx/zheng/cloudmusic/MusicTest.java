@@ -80,7 +80,7 @@ public class MusicTest extends FragmentActivity {
 	private static ActionBar mActionBar;
 	private static PagerSlidingTabStrip mTabs;
 	private AppSectionsPagerAdapter mAppSectionsPagerAdapter;
-	private static Typeface mEntypo;
+	public static Typeface mEntypo;
 	private static LinearLayout mLibraryView;
 	private static ViewPager mViewPager;
 	private static ListView mAlbumListView;
@@ -388,24 +388,13 @@ public class MusicTest extends FragmentActivity {
 		}
 		return false;
 	}
-	
-	private void dropBoxRoot(){
-		TextView text = (TextView)findViewById(R.id.textView1);
-		text.setText("");
-		List<String> fileList = mDropbox.listDirectory(DbxPath.ROOT);
-		for (String file : fileList) {
-			text.append(file + "\n");
-		}
-		String testFile = "02 自由の翼.m4a";
-		FileInputStream file;
-	}
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
     	Log.d(TAG, "onActivityResult");
     	switch (requestCode) {
     	case Dropbox.REQUEST_LINK_TO_DBX:
-    		dropBoxRoot();
+    		break;
     	case YLoginManager.Y_LOGIN_COMPLETE:
 			Log.d("login", "login complete");
 			Ybox.getInstance().setSid(this);

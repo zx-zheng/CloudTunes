@@ -8,7 +8,9 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import jp.zx.zheng.cloudmusic.Track;
+import jp.zx.zheng.cloudstorage.AppKey;
 import jp.zx.zheng.cloudstorage.CloudStorageFile;
+import jp.zx.zheng.cloudstorage.CloudStoragePath;
 import jp.zx.zheng.storage.CacheManager;
 import android.app.Activity;
 import android.content.Context;
@@ -28,8 +30,8 @@ import com.dropbox.sync.android.DbxPath;
 public class Dropbox {
 
 	private static final String TAG = Dropbox.class.getName();
-    private static final String appKey = "jffm42sh7pd6gqp";
-    private static final String appSecret = "6o2w7yyalpeqqt3";
+    private static final String appKey = AppKey.DROPBOX_APP_KEY;
+    private static final String appSecret = AppKey.DROPBOX_APP_SECRET;
     private static final String DROPBOX_APP_CACHE_DIR = "app_DropboxSyncCache";
 
     public static final int REQUEST_LINK_TO_DBX = 0;
@@ -43,6 +45,10 @@ public class Dropbox {
     	if(instance == null) {
     		instance = new Dropbox(context);
     	}
+    	return instance;
+    }
+    
+    public static Dropbox getInstance() {
     	return instance;
     }
     
@@ -87,15 +93,30 @@ public class Dropbox {
     	return mDbxAcctMgr.hasLinkedAccount();
     }
     
-    public List<String> listDirectory (DbxPath dir) {
-    	List<String> fileList = new ArrayList<String>();
+    public boolean isDir(DbxPath path) {
+    	try {
+			DbxFileSystem dbxFs = DbxFileSystem.forAccount(mDbxAcctMgr.getLinkedAccount());
+			return dbxFs.isFolder(path);
+		} catch (Unauthorized e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (DbxException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    	return false;
+    }
+    
+    public List<CloudStoragePath> listDirectory (DbxPath dir) {
+    	List<CloudStoragePath> fileList = new ArrayList<CloudStoragePath>();
+    	//Log.d(TAG, "root name: " + new DbxPath("/").);
     	try {
 			DbxFileSystem dbxFs = DbxFileSystem.forAccount(mDbxAcctMgr.getLinkedAccount());
 			dbxFs.getSyncStatus();
 			if (dbxFs.isFolder(dir)) {
 				List<DbxFileInfo> infos = dbxFs.listFolder(dir);
 				for (DbxFileInfo info : infos) {
-					fileList.add(info.path.toString());
+					fileList.add(new DbxPathAdapter(info.path));
 					Log.d(TAG, info.path.toString());
 				}
 			} else {
