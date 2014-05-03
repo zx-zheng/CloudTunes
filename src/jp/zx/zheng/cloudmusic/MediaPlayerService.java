@@ -21,6 +21,7 @@ import android.os.PowerManager;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.RemoteViews;
+import android.widget.Toast;
 
 public class MediaPlayerService extends Service 
 implements MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener{
@@ -37,6 +38,7 @@ implements MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener{
 	private int mMusicDuration;
 	private static boolean isWatingPrepare = false;
 	public boolean isPausing = false;
+	private int skipCount = 0;
 	
 	final int NOTIFICATION_ID = 1;
 	public static final String ACTION_PLAY = "mediaplayerservice.action.PLAY";
@@ -160,7 +162,10 @@ implements MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener{
 	@Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 		Log.d(TAG, "onStartCommand");
-		String action = intent.getAction();
+		String action = "";
+		if(intent != null) {
+			action = intent.getAction();
+		}
 		if(action.equals(ACTION_PLAY_PAUSE)) {
 			processTogglePlaybackRequest();
 		} else if(action.equals(ACTION_SKIP)) {
@@ -192,9 +197,25 @@ implements MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener{
 		}
 		isWatingPrepare = false;
 		if(!track.isCached()) {
-			playNextTrack(isPrev);
+			if(skipCount > MusicPlayer.getInstance(getApplicationContext()).getTrackListSize()) {
+				Toast.makeText(getApplicationContext(), "No track available", Toast.LENGTH_SHORT).show();
+				MusicPlayer.getInstance(getApplicationContext()).reset();
+				return;
+			}
+			Intent intent;
+			if(!isPrev) {
+				intent = new Intent(this, MediaPlayerService.class);
+				intent.setAction(ACTION_SKIP);
+			} else {
+				intent = new Intent(this, MediaPlayerService.class);
+				intent.setAction(ACTION_REWIND);
+			}
+			startService(intent);
+			skipCount++;
+			//playNextTrack(isPrev);
 			return;
 		}
+		skipCount = 0;
 		releaseResouces(false);
 		updateUI2(track);
 		createMediaPlayerIfNeeded();
@@ -398,6 +419,10 @@ implements MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener{
     	Log.d(TAG, "cancel Notification");
     	stopForeground(true);
     	mNotificationManager.cancel(NOTIFICATION_ID);
+    }
+    
+    public void resetSkipCount() {
+    	skipCount = 0;
     }
     
     public void maybePrepareIsDoen() {

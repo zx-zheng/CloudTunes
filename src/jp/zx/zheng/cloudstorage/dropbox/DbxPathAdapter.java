@@ -46,4 +46,9 @@ public class DbxPathAdapter implements CloudStoragePath {
 		}
 	}
 
+	@Override
+	public String getRootName() {
+		return "Dropbox";
+	}
+
 }

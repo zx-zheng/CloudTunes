@@ -103,6 +103,7 @@ public class MusicLibraryParser extends AsyncTask<String, String, String>{
 		}
 		mDbadapter.open();
 		mDbadapter.truncate();
+		mDbadapter.beginTransaction();
 		Log.i(TAG, "start parse");
 		try {
 			int eventType = mXpp.getEventType();
@@ -120,6 +121,7 @@ public class MusicLibraryParser extends AsyncTask<String, String, String>{
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		mDbadapter.commitAndEndTransaction();
 	}
 	
 	private void parseMainDict() throws XmlPullParserException, IOException {

@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -15,8 +16,8 @@ import jp.zx.zheng.storage.CacheManager;
 import android.app.Activity;
 import android.content.Context;
 import android.util.Log;
+import android.webkit.MimeTypeMap;
 
-import com.android.volley.Response.Listener;
 import com.dropbox.sync.android.DbxAccount;
 import com.dropbox.sync.android.DbxAccountManager;
 import com.dropbox.sync.android.DbxException;
@@ -33,11 +34,16 @@ public class Dropbox {
     private static final String appKey = AppKey.DROPBOX_APP_KEY;
     private static final String appSecret = AppKey.DROPBOX_APP_SECRET;
     private static final String DROPBOX_APP_CACHE_DIR = "app_DropboxSyncCache";
+    private static final List<String> EXTENSION_MUSIC =
+    		Arrays.asList(
+    				new String[]{"mp3", "m4a", "mp4", "aac", "wav", "flac", "3gp"}
+    				);
 
     public static final int REQUEST_LINK_TO_DBX = 0;
     
     private static Dropbox instance;
     private static DbxAccountManager mDbxAcctMgr;
+    private static DbxFileSystem mDbxFs;
     private Context mContext;
     private AtomicInteger mDownloadCount = new AtomicInteger(0);
     
@@ -95,8 +101,10 @@ public class Dropbox {
     
     public boolean isDir(DbxPath path) {
     	try {
-			DbxFileSystem dbxFs = DbxFileSystem.forAccount(mDbxAcctMgr.getLinkedAccount());
-			return dbxFs.isFolder(path);
+    		if(mDbxFs == null) {
+    			mDbxFs = DbxFileSystem.forAccount(mDbxAcctMgr.getLinkedAccount());
+    		}
+			return mDbxFs.isFolder(path);
 		} catch (Unauthorized e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -108,16 +116,24 @@ public class Dropbox {
     }
     
     public List<CloudStoragePath> listDirectory (DbxPath dir) {
+    	return listDirectory(dir, false);
+    }
+    
+    public List<CloudStoragePath> listDirectory (DbxPath dir, boolean isOnlyMusic) {
     	List<CloudStoragePath> fileList = new ArrayList<CloudStoragePath>();
-    	//Log.d(TAG, "root name: " + new DbxPath("/").);
     	try {
 			DbxFileSystem dbxFs = DbxFileSystem.forAccount(mDbxAcctMgr.getLinkedAccount());
 			dbxFs.getSyncStatus();
 			if (dbxFs.isFolder(dir)) {
 				List<DbxFileInfo> infos = dbxFs.listFolder(dir);
 				for (DbxFileInfo info : infos) {
-					fileList.add(new DbxPathAdapter(info.path));
-					Log.d(TAG, info.path.toString());
+					String fileName = info.path.getName();
+					if(!isOnlyMusic || info.isFolder
+							|| EXTENSION_MUSIC.contains(
+									fileName.substring(fileName.lastIndexOf('.') + 1)
+											)) {
+						fileList.add(new DbxPathAdapter(info.path));
+					}
 				}
 			} else {
 				return null;

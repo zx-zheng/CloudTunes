@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Queue;
 
 import jp.zx.zheng.cloudmusic.MediaPlayerService.State;
+import jp.zx.zheng.cloudstorage.CloudStoragePath;
 import jp.zx.zheng.cloudstorage.dropbox.Downloader;
 import jp.zx.zheng.cloudstorage.dropbox.Dropbox;
 import jp.zx.zheng.storage.CacheManager;
@@ -187,7 +188,7 @@ public class MusicPlayer {
 	}
 	
 	public void setAlbumArt(Track track) {
-		byte[] albumArtData = track.getAlbumArt(track);
+		byte[] albumArtData = track.getAlbumArt();
     	Bitmap bitmap = null;
     	if(albumArtData != null) {
     		bitmap = BitmapFactory.decodeByteArray(albumArtData, 0, albumArtData.length);
@@ -246,43 +247,20 @@ public class MusicPlayer {
 	
 	public void reset() {
 		Log.d(TAG, "reset Music Player");
-		mBoundMPservice.stop();
+		mBoundMPservice.processStopRequest(true);
 		isPlayingMusic = false;
 		isInPlayingState =false;
 		clearQuere();
 		mCurrentPlayingFile = null;
 		mCurrentTrack = null;
 		mSeekbar.setProgress(0);
+		mProgressBar.setVisibility(View.INVISIBLE);
 		setPlayButtonStatus();
 		//setAlbumArt();
 		setTrackLabels();
 	}
-
-	private void playMusic(Track track) {
-		/*
-		Log.d(TAG, "play music");
-		FileInputStream file;
-		if (!CacheManager.isCached(track)){
-			prepareTrack(currentPos);
-			return;
-		} else {
-			file = CacheManager.getCacheFile(track);
-			Log.d(TAG, "read cache");
-		}
-		mProgressBar.setVisibility(View.INVISIBLE);
-		mCurrentTrack = track;
-		mCurrentPlayingFile = file;
-		track.setFile(file);
-		mBoundMPservice.play(track);
-		setAlbumArt();
-		isInPlayingState = true;
-		isPlayingMusic = true;
-		setPlayButtonStatus();
-		setTrackLabels();
-		mHandler.postDelayed(mSeekBarSetter, 500);
-		*/
-	}
 	
+	//before download file
 	public void updateUI(Track track) {
 		setTrackLabels(track);
 		if(!track.isCached()) {
@@ -290,7 +268,12 @@ public class MusicPlayer {
 		}
 	}
 	
-	public void updateUI2(Track track) {	
+	//after download file
+	public void updateUI2(Track track) {
+		if(track.getArtist() == null) {
+			track.updateInfo();
+			setTrackLabels(track);
+		}
 		setAlbumArt(track);
 		mProgressBar.setVisibility(View.INVISIBLE);
 	}
@@ -500,23 +483,7 @@ public class MusicPlayer {
 	}
 	
 	public byte[] getAlbumArt(Track track) {
-		return track.getAlbumArt(track);
-		/*
-		try {
-			if(track.getFile() != null) {
-				mMediaMetaData.setDataSource(track.getFile().getFD());
-				return mMediaMetaData.getEmbeddedPicture();
-			} else {
-				return null;
-			}
-		} catch (IllegalArgumentException e) {
-			e.printStackTrace();
-			return null;
-		} catch (IOException e) {
-			e.printStackTrace();
-			return null;
-		}
-		*/
+		return track.getAlbumArt();
 	}
 	
 	public byte[] getAlbumArt() {
@@ -553,6 +520,41 @@ public class MusicPlayer {
 		
 		//download file in background
 		preparePlayList();
+		mBoundMPservice.resetSkipCount();
+		mBoundMPservice.processPlayRequest(true);
+		//playMusic(mCurrentPlayList.get(currentPos));
+	}
+	
+	public void addCloudPathToListAndPlay(List<CloudStoragePath> pathList, int startPos) {
+		mOriginalPlayList.clear();
+		mShuffledPlayList.clear();
+		mReadyQueue.clear();
+		isInPlayingState = false;
+		int fixedStartPos = startPos;
+		for(int i = 0; i < pathList.size(); i++) {
+			CloudStoragePath path = pathList.get(i);
+			if(!path.isDir()) {
+				mOriginalPlayList.add(new Track(0, path.getName(), null, null, null, 
+						CacheManager.DROPBOX_DIR + path.getPath()));				
+			} else {
+				if(i < startPos) {
+					fixedStartPos--;
+				}
+			}
+		}
+		Log.d(TAG, "" + fixedStartPos);
+		if(isShuffleMode) {
+			shuffleTrackList(fixedStartPos);
+			mCurrentPlayList = mShuffledPlayList;
+			currentPos = 0;
+		} else {
+			mCurrentPlayList = mOriginalPlayList;
+			currentPos = fixedStartPos;
+		}
+		
+		//download file in background
+		preparePlayList();
+		mBoundMPservice.resetSkipCount();
 		mBoundMPservice.processPlayRequest(true);
 		//playMusic(mCurrentPlayList.get(currentPos));
 	}
@@ -579,8 +581,12 @@ public class MusicPlayer {
 			mDownloader.cancel(false);
 		}
 		Log.d(TAG, "execute new download task");
-		mDownloader = new Downloader(mDropbox, this, mPiPrepared).
+		mDownloader = new Downloader(mDropbox, mPiPrepared, mMainActivity.getApplicationContext()).
 				executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, trackArray);
+	}
+	
+	public int getTrackListSize() {
+		return mOriginalPlayList.size();
 	}
 	
 	public void addToReadyQueue(Track track) {

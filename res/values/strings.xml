@@ -5,7 +5,7 @@
     <string name="action_settings">Settings</string>
     <string name="hello_world">Hello world!</string>
     <string name="general">General</string>
-    <string name="cloud_storage">Cloud storage</string>
+    <string name="cloud_storage">Cloud Storage</string>
     <string name="logged_in">Logged in as</string>
     <string name="not_logged_in">Not logged in</string>
     <string name="pref_storage_for_library_file">Storage for iTunes library</string>
@@ -20,5 +20,7 @@
     <string name="reload">Reload</string>
     <string name="path_of_xml">Path of xml file</string>
     <string name="path_of_xml_key">path_of_xml_key</string>
+    <string name="drawer_open">Open navigation drawer</string>
+    <string name="drawer_close">Close navigation drawer</string>
 
 </resources>

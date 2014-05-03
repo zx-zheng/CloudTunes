@@ -7,4 +7,5 @@ public interface CloudStoragePath {
 	public boolean isDir();
 	public String toString();
 	public Object getPath();
+	public String getRootName();
 }

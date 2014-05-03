@@ -6,6 +6,7 @@ import java.util.List;
 
 import jp.zx.zheng.cloudmusic.MediaPlayerService;
 import jp.zx.zheng.cloudmusic.MusicPlayer;
+import jp.zx.zheng.cloudmusic.MusicTest;
 import jp.zx.zheng.cloudmusic.Track;
 import jp.zx.zheng.storage.CacheManager;
 
@@ -16,21 +17,32 @@ import com.dropbox.sync.android.DbxPath;
 
 import android.app.PendingIntent;
 import android.app.PendingIntent.CanceledException;
+import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.util.Log;
 
 public class Downloader extends AsyncTask<Track, Track, List<Track>> {
 
 	private static final String TAG = Downloader.class.getName();
 	private Dropbox mDropbox;
-	private MusicPlayer mMusicPlayer;
 	private PendingIntent mPi;
-	public Downloader(Dropbox dropbox, MusicPlayer musicPlayer, PendingIntent pi) {
+	private Context mContext;
+	private static HandlerThread mHandlerThread;
+	private static Handler mHandler;
+	private boolean fileDownloaded = false;
+	public Downloader(Dropbox dropbox, PendingIntent pi, Context context) {
 		mDropbox = dropbox;
-		mMusicPlayer = musicPlayer;
 		mPi = pi;
+		mContext = context;
 		mDropbox.startDownloadTask();
+		if(mHandler == null) {
+			mHandlerThread = new HandlerThread("handlerThread");
+			mHandlerThread.start();
+			mHandler = new Handler(mHandlerThread.getLooper());
+		}
 	}
 	
 	@Override
@@ -44,6 +56,15 @@ public class Downloader extends AsyncTask<Track, Track, List<Track>> {
 				try {
 					if(!CacheManager.isCached(tracks[i]) && mDropbox.downloadTrackFileAndCache(tracks[i]) != null) {				
 						list.add(tracks[i]);
+						fileDownloaded = true;
+						tracks[i].insertToDb();
+						mHandler.post(new Runnable() {
+							
+							@Override
+							public void run() {
+								MusicTest.CloudArtistListFragment.reLoadArtists(mContext);		
+							}
+						});						
 						Log.d(TAG, "Download complete " + tracks[i]);
 					}
 					tracks[i].isPrepared = true;
@@ -84,7 +105,9 @@ public class Downloader extends AsyncTask<Track, Track, List<Track>> {
 	@Override
 	protected void onPostExecute(List<Track> tracks) {
 		mDropbox.endDownloadTask();
-		mDropbox.deleteCache();
+		if(fileDownloaded) {
+			mDropbox.deleteCache();
+		}
     }
 	
 	@Override

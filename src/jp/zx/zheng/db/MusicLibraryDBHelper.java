@@ -21,6 +21,7 @@ public class MusicLibraryDBHelper extends SQLiteOpenHelper {
 	static final int DATABASE_VERSION = 1;
 	
 	public static final String TABLE_TRACKS_NAME = "tracks";
+	public static final String TABLE_CLOUD_TRACKS_NAME = "cloud_tracks";
 	public static final String TABLE_PLAYLISTS_NAME = "playlists";
 	public static final String TABLE_PLAYLIST_NAMES_NAME = "playlist_names";
 	public static final String COL_ID = "_id";
@@ -61,6 +62,23 @@ public class MusicLibraryDBHelper extends SQLiteOpenHelper {
 						+ COL_PLAY_COUNT + " INTEGER,"
 						+ COL_YEAR + " INTEGER,"
 						+ COL_LOCATION + " TEXT NOT NULL"
+						+ ");");
+		
+		db.execSQL(
+				"CREATE TABLE " + TABLE_CLOUD_TRACKS_NAME + " ("
+						+ COL_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
+						+ COL_NAME + " TEXT NOT NULL,"
+						+ COL_ARTIST + " TEXT,"
+						+ COL_ALBUM_ARTIST + " TEXT,"
+						+ COL_ALBUM + " TEXT,"
+						+ COL_GENRE + " TEXT,"
+						+ COL_DICS_NUMBER + " INTEGER,"
+						+ COL_DICS_COUNT + " INTEGER,"
+						+ COL_TRACK_NUMBER + " INTEGER,"
+						+ COL_TRACK_COUNT + " INTEGER,"
+						+ COL_PLAY_COUNT + " INTEGER,"
+						+ COL_YEAR + " INTEGER,"
+						+ COL_LOCATION + " TEXT UNIQUE NOT NULL"
 						+ ");");
 		
 		db.execSQL(
@@ -105,6 +123,28 @@ public class MusicLibraryDBHelper extends SQLiteOpenHelper {
 		return db.insert(TABLE_TRACKS_NAME, "null", values);
 	}
 	
+	public long insertTrackToCloudLibrary(SQLiteDatabase db, String name, String artist,
+			String albumArtist, String album, String genre, int discNumber, int discCount,
+			int trackNumber, int trackCount, int playCount, int year, String location) {
+		ContentValues values = new ContentValues();
+		values.put(COL_NAME, name);
+		if(artist == null) artist = "no artist"; 
+		values.put(COL_ARTIST, artist);
+		if(albumArtist == null) albumArtist = artist;
+		values.put(COL_ALBUM_ARTIST, albumArtist);
+		if(album != null) values.put(COL_ALBUM, album);
+		if(genre != null) values.put(COL_GENRE, genre);
+		values.put(COL_DICS_NUMBER, discNumber);
+		values.put(COL_DICS_COUNT, discCount);
+		values.put(COL_TRACK_NUMBER, trackNumber);
+		values.put(COL_TRACK_COUNT, trackCount);
+		values.put(COL_PLAY_COUNT, playCount);
+		values.put(COL_YEAR, year);
+		values.put(COL_LOCATION, location);
+		//Log.d(TAG, "insert track " + id);
+		return db.insert(TABLE_CLOUD_TRACKS_NAME, "null", values);
+	}
+	
 	public long insertTrackToPlaylist(SQLiteDatabase db, int playlistId, int trackId) {
 		ContentValues values = new ContentValues();
 		values.put(COL_ID, playlistId);
@@ -130,10 +170,14 @@ public class MusicLibraryDBHelper extends SQLiteOpenHelper {
 		return null;
 	}
 	
-	public List<String> listAlbumArtists(SQLiteDatabase db) {
+	public List<String> listAlbumArtists(SQLiteDatabase db) {		
+		return listAlbumArtists(db, TABLE_TRACKS_NAME);
+	}
+	
+	public List<String> listAlbumArtists(SQLiteDatabase db, String table) {
 		List<String> artistList = new ArrayList<String>();
 		String[] columns = {COL_ALBUM_ARTIST};
-		Cursor cursor = db.query(true, TABLE_TRACKS_NAME, columns, 
+		Cursor cursor = db.query(true, table, columns, 
 				null, null, null, null, COL_ALBUM_ARTIST, null);
 		while(cursor.moveToNext()) {
 			String albumArtist = cursor.getString(cursor.getColumnIndex(COL_ALBUM_ARTIST));
@@ -144,9 +188,13 @@ public class MusicLibraryDBHelper extends SQLiteOpenHelper {
 	}
 	
 	public List<String> listAlbum(SQLiteDatabase db, String albumArtist) {
+		return listAlbum(db, TABLE_TRACKS_NAME, albumArtist);
+	}
+	
+	public List<String> listAlbum(SQLiteDatabase db, String table, String albumArtist) {
 		List<String> albumList = new ArrayList<String>();
 		String[] columns = {COL_ALBUM};
-		Cursor cursor = db.query(true, TABLE_TRACKS_NAME, columns, 
+		Cursor cursor = db.query(true, table, columns, 
 				COL_ALBUM_ARTIST + " = ?",
 				new String[]{albumArtist}, null, null, COL_ALBUM, null);
 		
@@ -161,9 +209,13 @@ public class MusicLibraryDBHelper extends SQLiteOpenHelper {
 	}
 	
 	public List<Track> listAlbumTracks(SQLiteDatabase db, String albumArtist, String album) {
+		return listAlbumTracks(db, TABLE_TRACKS_NAME, albumArtist, album);
+	}
+	
+	public List<Track> listAlbumTracks(SQLiteDatabase db, String table, String albumArtist, String album) {
 		List<Track> trackList = new ArrayList<Track>();
 		String[] columns = {COL_ID, COL_NAME, COL_ARTIST, COL_LOCATION, COL_DICS_NUMBER, COL_TRACK_NUMBER};
-		Cursor cursor = db.query(true, TABLE_TRACKS_NAME, columns, 
+		Cursor cursor = db.query(true, table, columns, 
 				COL_ALBUM_ARTIST + " = ? and " + COL_ALBUM +" = ?",
 				new String[]{albumArtist, album}, null, null, 
 				COL_DICS_NUMBER + "," + COL_TRACK_NUMBER, null);

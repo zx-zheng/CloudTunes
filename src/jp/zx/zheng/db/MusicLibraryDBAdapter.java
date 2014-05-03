@@ -36,10 +36,26 @@ public class MusicLibraryDBAdapter {
 		mDb.close();
 	}
 	
+	public void beginTransaction() {
+		mDb.beginTransaction();
+	}
+	
+	public void commitAndEndTransaction() {
+		mDb.setTransactionSuccessful();
+		mDb.endTransaction();
+	}
+	
 	public long insertTrack(int id, String name, String artist,
 			String albumArtist, String album, String genre, int discNumber, int discCount,
 			int trackNumber, int trackCount, int playCount, int year, String location) {
 		return mHelper.insertTrack(mDb, id, name, artist, albumArtist, album, genre, discNumber, 
+				discCount, trackNumber, trackCount, playCount, year, location);
+	}
+	
+	public long insertTrackToCloudLibrary(String name, String artist,
+			String albumArtist, String album, String genre, int discNumber, int discCount,
+			int trackNumber, int trackCount, int playCount, int year, String location) {
+		return mHelper.insertTrackToCloudLibrary(mDb, name, artist, albumArtist, album, genre, discNumber, 
 				discCount, trackNumber, trackCount, playCount, year, location);
 	}
 	
@@ -59,12 +75,24 @@ public class MusicLibraryDBAdapter {
 		return mHelper.listAlbumArtists(mDb);
 	}
 	
+	public List<String> listAlbumArtists(String table) {
+		return mHelper.listAlbumArtists(mDb, table);
+	}
+	
 	public List<String> listAlbum(String albumArtist) {
 		return mHelper.listAlbum(mDb, albumArtist);
 	}
 	
+	public List<String> listAlbum(String table, String albumArtist) {
+		return mHelper.listAlbum(mDb, table, albumArtist);
+	}
+	
 	public List<Track> listAlbumTracks(String albumArtist, String album) {
 		return mHelper.listAlbumTracks(mDb, albumArtist, album);
+	}
+	
+	public List<Track> listAlbumTracks(String table, String albumArtist, String album) {
+		return mHelper.listAlbumTracks(mDb, table, albumArtist, album);
 	}
 	
 	public List<Playlist> listPlaylist() {

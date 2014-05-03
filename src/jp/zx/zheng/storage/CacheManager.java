@@ -20,6 +20,7 @@ public class CacheManager {
 
 	private static final String TAG = CacheManager.class.getName();
 	private static final String CACHE_DIR = "/CloudMusic/";
+	public static final String DROPBOX_DIR = "Dropbox";
 	
 	public static String getCachePath(Track track) {
 		String trackPath = pathTodbxPath(track.getLocation()).toString();
@@ -84,9 +85,20 @@ public class CacheManager {
 		return AbsPath;
 	}
 	
-	public static DbxPath pathTodbxPath(String path) {
-		String relativePath = path.substring(path.indexOf("iTunes") - 1);
+	public static String pathTodbxPathString(String path) {
+		String relativePath;
+		if(path.indexOf(DROPBOX_DIR) != -1) {
+			relativePath = path.substring(path.indexOf(DROPBOX_DIR) + DROPBOX_DIR.length());
+		} else if(path.indexOf("iTunes") != -1) {
+			relativePath = path.substring(path.indexOf("iTunes") - 1);
+		} else {
+			relativePath = path;
+		}
 		//Log.d(TAG, relativePath);
-		return new DbxPath(relativePath);
+		return relativePath;
+	}
+	
+	public static DbxPath pathTodbxPath(String path) {		
+		return new DbxPath(pathTodbxPathString(path));
 	}
 }

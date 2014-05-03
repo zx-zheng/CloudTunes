@@ -5,8 +5,6 @@ import java.io.FileInputStream;
 import com.dropbox.sync.android.DbxAccount;
 
 import jp.zx.zheng.cloudstorage.dropbox.Dropbox;
-import jp.zx.zheng.cloudstorage.ybox.YLoginManager;
-import jp.zx.zheng.cloudstorage.ybox.Ybox;
 import jp.zx.zheng.musictest.R;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -25,7 +23,8 @@ import android.util.Log;
 public class SettingActivity extends PreferenceActivity {
 	
 	private static final String TAG = SettingActivity.class.getName();
-	private static final int REQUEST_XML_PATH = 10;
+	private static final int REQUEST_XML_PATH = 100;
+	public static final String DROPBOX_LOGIN = "dropboxLogin";
 	
 	private static SharedPreferences mPref;
 	
@@ -71,7 +70,17 @@ public class SettingActivity extends PreferenceActivity {
 				Dropbox.getInstance(getApplicationContext()).login(SettingActivity.this);
 				return true;
 			}
-		});    
+		});
+        
+        Intent intent = getIntent();
+        if(intent != null) {
+        	String action = intent.getAction();
+        	if(action != null) {
+        		if(action.equals(DROPBOX_LOGIN)) {
+        			Dropbox.getInstance(getApplicationContext()).login(SettingActivity.this);
+        		}
+        	}
+        }
 	}
 	
 	private void setXmlPath(String path) {
