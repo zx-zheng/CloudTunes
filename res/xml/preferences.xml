@@ -31,5 +31,9 @@
 		    android:title="Dropbox" 
 		    android:key="dropbox_account">
     	</PreferenceScreen>
+    	<PreferenceScreen 
+		    android:title="Google Drive" 
+		    android:key="googledrive_account">
+    	</PreferenceScreen>
     	
 </PreferenceScreen>

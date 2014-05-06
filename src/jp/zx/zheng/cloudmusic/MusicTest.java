@@ -12,9 +12,12 @@ import com.dropbox.sync.android.DbxPath;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout.PanelSlideListener;
 
+import jp.zx.zheng.cloudstorage.CloudStorage;
+import jp.zx.zheng.cloudstorage.CloudStorage.Storage;
 import jp.zx.zheng.cloudstorage.CloudStoragePath;
 import jp.zx.zheng.cloudstorage.dropbox.DbxPathAdapter;
 import jp.zx.zheng.cloudstorage.dropbox.Dropbox;
+import jp.zx.zheng.cloudstorage.googledrive.GoogleDrive;
 import jp.zx.zheng.db.MusicLibraryDBAdapter;
 import jp.zx.zheng.db.MusicLibraryDBHelper;
 import jp.zx.zheng.musictest.R;
@@ -389,25 +392,25 @@ public class MusicTest extends FragmentActivity {
 		mDrawerToggle.onConfigurationChanged(newConfig);
 	}
 	
-	private static void setActionBarTitle() {
+	public static void setActionBarTitle() {
 		mActionBar.setTitle(R.string.app_name);
 		mActionBar.setIcon(R.drawable.ic_cloud_music);
 	}
 	
-	private static void setActionBarTitle(int resId) {
+	public static void setActionBarTitle(int resId) {
 		mActionBar.setTitle(resId);
 	}
 	
-	private static void setActionBarTitle(String title) {
+	public static void setActionBarTitle(String title) {
 		mActionBar.setTitle(title);
 	}
 	
-	private static void setActionBarTitle(int resIdTitle, int resIdImage) {
+	public static void setActionBarTitle(int resIdTitle, int resIdImage) {
 		mActionBar.setTitle(resIdTitle);
 		mActionBar.setIcon(resIdImage);
 	}
 	
-	private static void setActionBarTitle(String title, int resId) {
+	public static void setActionBarTitle(String title, int resId) {
 		mActionBar.setTitle(title);
 		mActionBar.setIcon(resId);
 	}
@@ -847,6 +850,7 @@ public class MusicTest extends FragmentActivity {
 	
 	public static class CloudStorageListFragment extends Fragment {
 		private String[] cloudstorages;
+		private Storage[] storages;
 		private int[] cloudstorageIcons;
 		@Override
 		public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -854,7 +858,9 @@ public class MusicTest extends FragmentActivity {
 			View rootView = inflater.inflate(R.layout.finder, container, false);
 			ListView storageList = (ListView) rootView.findViewById(R.id.FileListView);
 			cloudstorages = getResources().getStringArray(R.array.pref_cloud_storage_entry);
-			cloudstorageIcons = new int[]{R.drawable.ic_dropbox};
+			storages = new Storage[]{Storage.DROPBOX, Storage.GOOGLE_DRIVE};
+			cloudstorageIcons = new int[]{R.drawable.ic_dropbox,
+					0};
 			ArrayAdapter<String> adapter = new IconRowArrayAdapter(getActivity(),
 					R.layout.icon_row,
 					cloudstorages,
@@ -868,6 +874,7 @@ public class MusicTest extends FragmentActivity {
 					Log.d(TAG, "Storage list clicked");
 					goToCloudStorageFinder();
 					setActionBarTitle(cloudstorages[position], cloudstorageIcons[position]);
+					new CloudStorageFinderClickedListener().setStorage(storages[position]);
 					new CloudStorageFinderClickedListener().reloadListView(getActivity(), null);
 				}
 			});
@@ -880,7 +887,7 @@ public class MusicTest extends FragmentActivity {
 
 		private static CloudStoragePath mParentPath;
 		private static CloudStoragePath mCurrentPath;
-		
+		private static CloudStorage.Storage mStorage;
 				
 		@Override
 		public void onItemClick(AdapterView<?> parent, View view, int position,
@@ -905,30 +912,16 @@ public class MusicTest extends FragmentActivity {
 				goToCloudLibrary();
 				return true;
 			}
-			if(path == null) {
-				path = new DbxPathAdapter(DbxPath.ROOT);
-			} else {
-				if(path.isRoot()) {
-					setActionBarTitle(path.getRootName());
-				} else {
-					setActionBarTitle(path.getName());
-				}
+			if(mStorage == Storage.DROPBOX) {
+				return Dropbox.getInstance(context).listDirectory(mCloudStorageFinderView, path, true);
+			} else if(mStorage == Storage.GOOGLE_DRIVE){
+				return GoogleDrive.getInstance(context).listDirectory(mCloudStorageFinderView, path);
 			}
-			List<CloudStoragePath> list = new ArrayList<CloudStoragePath>();
-			if(!path.isRoot()) {
-				list.add(path.getParent());
-			}
-			List<CloudStoragePath> childList = 
-					Dropbox.getInstance(context).listDirectory((DbxPath) path.getPath(), true); 		
-			if (childList == null) {
-				return false;
-			}
-			list.addAll(childList);
-			Log.d(TAG, path.toString());
-			FinderRowArrayAdapter adapter = new FinderRowArrayAdapter(context,
-					R.layout.finder_row, list, !path.isRoot());
-			mCloudStorageFinderView.setAdapter(adapter);
-			return true;
+			return false;
+		}
+		
+		public void setStorage(Storage storage) {
+			mStorage = storage;
 		}
 		
 		public boolean isRoot() {

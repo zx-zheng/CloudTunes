@@ -12,9 +12,11 @@
     <string name="itunes_music_library">iTunes Library File</string>
     <string-array name="pref_cloud_storage_entry">
         <item >Dropbox</item>
+        <item >Google Drive</item>
     </string-array>
     <string-array name="pref_cloud_storage_values">
-        <item >dropbox</item>
+        <item >Dropbox</item>
+        <item >Google Drive</item>
     </string-array>
     <string name="pref_cloud_storage_default">dropbox</string>
     <string name="reload">Reload</string>

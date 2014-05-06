@@ -8,15 +8,19 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import jp.zx.zheng.cloudmusic.FinderRowArrayAdapter;
+import jp.zx.zheng.cloudmusic.MusicTest;
 import jp.zx.zheng.cloudmusic.Track;
 import jp.zx.zheng.cloudstorage.AppKey;
 import jp.zx.zheng.cloudstorage.CloudStorageFile;
 import jp.zx.zheng.cloudstorage.CloudStoragePath;
+import jp.zx.zheng.musictest.R;
 import jp.zx.zheng.storage.CacheManager;
 import android.app.Activity;
 import android.content.Context;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
+import android.widget.ListView;
 
 import com.dropbox.sync.android.DbxAccount;
 import com.dropbox.sync.android.DbxAccountManager;
@@ -113,6 +117,33 @@ public class Dropbox {
 			e.printStackTrace();
 		}
     	return false;
+    }
+    
+    public boolean listDirectory(ListView view, CloudStoragePath path, boolean isOnlyMusic) {
+    	if(path == null) {
+			path = new DbxPathAdapter(DbxPath.ROOT);
+		} else {
+			if(path.isRoot()) {
+				MusicTest.setActionBarTitle(path.getRootName());
+			} else {
+				MusicTest.setActionBarTitle(path.getName());
+			}
+		}
+    	List<CloudStoragePath> list = new ArrayList<CloudStoragePath>();
+		if(!path.isRoot()) {
+			list.add(path.getParent());
+		}
+		List<CloudStoragePath> childList = 
+				listDirectory((DbxPath) path.getPath(), true); 		
+		if (childList == null) {
+			return false;
+		}
+		list.addAll(childList);
+		Log.d(TAG, path.toString());
+		FinderRowArrayAdapter adapter = new FinderRowArrayAdapter(mContext,
+				R.layout.finder_row, list, !path.isRoot());
+		view.setAdapter(adapter);
+		return true;
     }
     
     public List<CloudStoragePath> listDirectory (DbxPath dir) {

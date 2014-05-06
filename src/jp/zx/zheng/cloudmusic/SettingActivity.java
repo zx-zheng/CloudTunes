@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import com.dropbox.sync.android.DbxAccount;
 
 import jp.zx.zheng.cloudstorage.dropbox.Dropbox;
+import jp.zx.zheng.cloudstorage.googledrive.GoogleDrive;
 import jp.zx.zheng.musictest.R;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -72,6 +73,15 @@ public class SettingActivity extends PreferenceActivity {
 			}
 		});
         
+        PreferenceScreen googledrivePref = (PreferenceScreen)findPreference("googledrive_account");
+        googledrivePref.setOnPreferenceClickListener(new OnPreferenceClickListener() {			
+			@Override
+			public boolean onPreferenceClick(Preference preference) {
+				GoogleDrive.getInstance(getApplicationContext()).connect(SettingActivity.this);
+				return true;
+			}
+		});
+        
         Intent intent = getIntent();
         if(intent != null) {
         	String action = intent.getAction();
@@ -123,6 +133,12 @@ public class SettingActivity extends PreferenceActivity {
     		Log.d(TAG, "Dropbox logged in");
     		reloadDropboxAccountSummaryAsync();
     		break;
+    	case GoogleDrive.RESOLVE_CONNECTION_REQUEST_CODE:
+    		Log.d(TAG, "GoogleDrive connecting");
+            if (resultCode == RESULT_OK) {
+                GoogleDrive.getInstance(this).connect(this);
+            }
+            break;
     	case REQUEST_XML_PATH:
     		if(resultCode == RESULT_OK) {
     			setXmlPath(data.getStringExtra("path"));
